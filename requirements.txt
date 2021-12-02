@@ -1,0 +1,12 @@
+numpy
+pandas
+scipy
+scikit-learn
+streamlit
+statsmodels
+matplotlib
+seaborn
+sktime
+pmdarima
+plotly==5.4.0
+streamlit-aggrid
