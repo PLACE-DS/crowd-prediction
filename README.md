@@ -11,5 +11,3 @@
 Go to src directory:
 
 - ```streamlit run app.py```
-
-![](img/first_look.png)
