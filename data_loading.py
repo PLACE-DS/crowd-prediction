@@ -9,9 +9,9 @@ crowd_sample = crowd_sample.drop(["Time"], axis=1)
 
 # CMSA-GAWW-22
 crowd_sample["CMSA-GAWW-22 Kloveniersburgwal"].to_csv("data/CMSA-GAWW-22-Kloveniersburgwal.csv")
-sensor1 = pd.read_csv("data/CMSA-GAWW-22-Kloveniersburgwal.csv")
-sensor1["objectnummer"] = "CMSA-GAWW-22"
-sensor1["location"] = "Kloveniersburgwal"
-sensor1["Datetime"] = pd.to_datetime(sensor1['Datetime'])
-sensor1 = sensor1.rename(columns={"CMSA-GAWW-22 Kloveniersburgwal": "count", "Datetime": "datetime"})
-sensor1 = sensor1.reindex(columns=["objectnummer", "location", "datetime", "count"])
+kloveniersburgwal = pd.read_csv("data/CMSA-GAWW-22-Kloveniersburgwal.csv")
+kloveniersburgwal["objectnummer"] = "CMSA-GAWW-22"
+kloveniersburgwal["location"] = "Kloveniersburgwal"
+kloveniersburgwal["Datetime"] = pd.to_datetime(kloveniersburgwal['Datetime'])
+kloveniersburgwal = kloveniersburgwal.rename(columns={"CMSA-GAWW-22 Kloveniersburgwal": "count", "Datetime": "datetime"})
+kloveniersburgwal = kloveniersburgwal.reindex(columns=["objectnummer", "location", "datetime", "count"])
