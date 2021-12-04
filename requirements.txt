@@ -10,4 +10,4 @@ sktime
 pmdarima
 plotly==5.4.0
 streamlit-aggrid
-pyramid-arima
+xgboost
