@@ -13,26 +13,27 @@ warnings.filterwarnings("ignore")
 # Prepare the data
 data = kloveniersburgwal
 
+
 # Training-test set split
 # split a univariate dataset into train/test sets
 def train_test_split(data, n_test):
-	return data[:-n_test, :], data[-n_test:, :]
+    return data[:n_test], data[n_test:]
 
 train, test = train_test_split(data, 400)
 
 # Fit ARIMA
-arima_fit = ARIMA(train["count"].values, order=(6,0,3)).fit()
+arima_fit = ARIMA(train["count"].values, order=(6, 0, 3)).fit()
 # Forecast the next 100 datetime points
-fc, se, conf  = arima_fit.forecast(800, alpha=0.05)  # 95% conf
+fc, se, conf = arima_fit.forecast(100, alpha=0.05)  # 95% conf
 
 # Create a df with forecast intervals of the next 100 datetime points
 
 # Get the following datetime (after the last point of training set)
-dt = [train.iloc[-1:]["datetime"].values[0] + np.timedelta64(15*i,'m') for i in range(100)]
+dt = [train.iloc[-1:]["datetime"].values[0] + np.timedelta64(15 * i, 'm') for i in range(100)]
 
 # Extract the forecasts
 forecasts = pd.DataFrame({"datetime": dt})
-forecasts["forecast"] = fc 
+forecasts["forecast"] = fc
 forecasts["lower_bound"] = conf[:, 0]
 forecasts["upper_bound"] = conf[:, 1]
 
@@ -41,10 +42,12 @@ forecasts["upper_bound"] = conf[:, 1]
 # Future work: extract objectnummer, location, threshold into forecast file 
 forecasts["objectnummer"] = "CMSA-GAWW-22"
 forecasts["location"] = "Kloveniersburgwal"
-forecasts["threshold"] = 182.5 #wrong number
-forecasts = forecasts.reindex(columns=["objectnummer", "location", "datetime", "forecast", "lower_bound", "upper_bound", "threshold"])
+forecasts["threshold"] = 182.5  # wrong number
+forecasts = forecasts.reindex(
+    columns=["objectnummer", "location", "datetime", "forecast", "lower_bound", "upper_bound", "threshold"])
 
 forecasts.to_csv("result/sensor1_forecast.csv")
+
 
 # XGBoost
 
@@ -61,13 +64,14 @@ def create_time_features(df, label=None):
     df['dayofyear'] = df['datetime'].dt.dayofyear
     df['dayofmonth'] = df['datetime'].dt.day
     df['weekofyear'] = df['datetime'].dt.weekofyear
-    
-    X = df[['hour','dayofweek','quarter','month','year',
-           'dayofyear','dayofmonth','weekofyear']]
+
+    X = df[['hour', 'dayofweek', 'quarter', 'month', 'year',
+            'dayofyear', 'dayofmonth', 'weekofyear']]
     if label:
         y = df[label]
         return X, y
     return X
+
 
 y_train = train[["count"]]
 X_train = train.drop(["count"], axis=1)
