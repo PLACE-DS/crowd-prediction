@@ -10,7 +10,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from st_aggrid import AgGrid
 
-
 # SET DEFAULT PAGE CONFIGS
 st.set_page_config(
     page_title="Overcrowding detection tool",
@@ -27,6 +26,7 @@ st.markdown(
 start_date = st.sidebar.date_input("Start date", datetime.date.today())
 end_date = st.sidebar.date_input("End date", datetime.date.today())
 sensor = st.sidebar.text_input("Sensor location", "Kloveniersburgwal")
+granularity= st.sidebar.st.sidebar.selectbox("Granularity", ("15 mins", "30 mins", "hour"))
 
 # Prepare the data
 sensor1 = pd.read_csv("result/CMSA-GAWW-22_forecast.csv", index_col="Unnamed: 0")
@@ -36,14 +36,15 @@ end_date = "11/10/2021"
 # Block 1: Map view
 
 # Block 2: Overcrowd moment
-st.markdown("## Block 2")
 st.markdown("### Overcrowding moments")
 st.markdown("Time between {} and {} where overcrowding is expected to happen. Actions should be taken!".format(start_date, end_date))
 
 # Prepare the data
 threshold = 182.5 # fake shit
 overcrowd = sensor1[sensor1.forecast > threshold][["objectnummer", "location", "datetime", "forecast", "threshold"]][:10]
+overcrowd["forecast"] = overcrowd["forecast"].round()
 overcrowd["warning_level"] = "high"
+
 AgGrid(
     overcrowd,
     height=200,
@@ -53,7 +54,6 @@ AgGrid(
     )
 
 # Block 3: Prediction plot
-st.markdown("## Block 3")
 st.markdown("### Predicted crowd count every 15 minutes")
 # Prepare the data
 location = sensor1.iloc[0, 1]
