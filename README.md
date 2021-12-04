@@ -1,6 +1,7 @@
 # Crowd count prediction and dashboard
 
-## Quick run
+## Development
+Make sure `virtualenv` is installed on your machine. Then do these following steps: 
 
 - ```virtualenv venv -p python3.7```
 
@@ -8,6 +9,10 @@
 
 - ```pip install -r requirements.txt```
 
-Go to src directory:
+Go to src directory, run this from the shell/terminal:
 
 - ```streamlit run app.py```
+
+You should see this pop up.
+
+![](img/first_look.png)

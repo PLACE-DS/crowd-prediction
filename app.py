@@ -26,7 +26,7 @@ st.markdown(
 start_date = st.sidebar.date_input("Start date", datetime.date.today())
 end_date = st.sidebar.date_input("End date", datetime.date.today())
 sensor = st.sidebar.text_input("Sensor location", "Kloveniersburgwal")
-granularity= st.sidebar.st.sidebar.selectbox("Granularity", ("15 mins", "30 mins", "hour"))
+granularity= st.sidebar.selectbox("Granularity", ("15 mins", "30 mins", "hour"))
 
 # Prepare the data
 sensor1 = pd.read_csv("result/CMSA-GAWW-22_forecast.csv", index_col="Unnamed: 0")
