@@ -8,6 +8,8 @@ matplotlib
 seaborn
 sktime
 pmdarima
-plotly==5.4.0
+plotly
 streamlit-aggrid
 xgboost
+requests
+click
