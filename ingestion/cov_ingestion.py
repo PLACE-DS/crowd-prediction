@@ -35,7 +35,15 @@ def cov_ingestion(country, start_date, end_date):
         rows.append(json["data"][date][country])
 
     df = pd.DataFrame(rows)
-    df.to_csv(os.path.join('data', 'raw', f'cov_{country.lower()}_raw.csv'))
+
+    outname = f'cov_{country.lower()}_raw.csv'
+    outdir = os.path.join('data', 'raw')
+    fullpath = os.path.join(outdir, outname)
+
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
+    df.to_csv(fullpath)
 
 
 if __name__ == "__main__":
