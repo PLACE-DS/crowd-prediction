@@ -103,7 +103,8 @@ st.markdown("##### It should look like this at some point")
 st.image("img/example1.png", width=900)
 
 # Block 4: Heatmap
-st.markdown("### Predicted average crowd each location every hour between {} and {}".format(start_date, end_date))
+st.markdown("### Predicted average crowd each location every hour")
+st.title("Predicted hourly crowd count between {} and {}".format(start_date, end_date))
 
 # Prepare the data
 sensor1["hour"] = sensor1.datetime.astype('datetime64[h]')
