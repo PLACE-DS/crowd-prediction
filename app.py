@@ -29,9 +29,9 @@ sensor = st.sidebar.text_input("Sensor location", "Kloveniersburgwal")
 granularity= st.sidebar.selectbox("Granularity", ("15 mins", "30 mins", "hour"))
 
 # Prepare the data
-sensor1 = pd.read_csv("result/CMSA-GAWW-22_forecast.csv", index_col="Unnamed: 0")
-start_date = "10/10/2021"
-end_date = "11/10/2021"
+sensor1 = pd.read_csv("result/sensor1_forecast.csv", index_col="Unnamed: 0")
+start_date = "10/08/2021"
+end_date = "11/08/2021"
 
 # Block 1: Map view
 

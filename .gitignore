@@ -1,0 +1,5 @@
+# git ignore file. Please add non-relevant files here.
+
+.idea/
+.DS_Store
+__pycache__/
