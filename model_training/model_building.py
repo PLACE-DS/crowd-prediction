@@ -72,7 +72,6 @@ def create_time_features(df, label=None):
         return X, y
     return X
 
-
 y_train = train[["count"]]
 X_train = train.drop(["count"], axis=1)
 X_train = create_time_features(X_train)
