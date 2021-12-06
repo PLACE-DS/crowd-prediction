@@ -1,5 +1,8 @@
 # Crowd count prediction and dashboard
 
+## Pipeline v2
+![pipeline v2](https://user-images.githubusercontent.com/37158629/144886644-e670f144-0ff6-40b2-bfbb-dc2664b5bd00.png)
+
 ## Development
 ### Python venv
 Make sure `virtualenv` is installed on your machine. Then do these following steps: 
