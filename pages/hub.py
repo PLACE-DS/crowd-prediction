@@ -43,21 +43,66 @@ def app():
 
     with column1:
         st.header("CMSA + other data sources")
+
+        trace2radio = st.radio("Second trace", ("GVB", "KNMI", "Parking", "Covid-19 cases", "Events"))
+        if trace2radio == 'GVB':
+            trace2 = dam_per_day
+            column = 'checkin'
+            tracetitle = "dam checkins per day"
+        elif trace2radio == 'KNMI':
+            trace2 = knmi_per_day
+            column = 'temperature'
+            tracetitle = 'temperature per day'
+
+        start_dt = st.date_input('Start date', value=cmsa_per_day.index.min())
+        end_dt = st.date_input('End date', value=cmsa_per_day.index.max())
+
         date_start = '2020-09-01'
         date_end = '2020-09-30'
+
         fig = go.Figure()
         fig.add_trace(
             go.Scatter(
-                x=cmsa_per_day.loc[date_start:date_end].index,
-                y=cmsa_per_day.loc[date_start:date_end]['total'],
-                name ='passengers by day'))
+                x=cmsa_per_day.loc[start_dt:end_dt].index,
+                y=cmsa_per_day.loc[start_dt:end_dt]['total'],
+                text = 'total',
+                                name ='passengers by day'))
         fig.add_trace(
             go.Scatter(
-                x=dam_per_day.loc[date_start:date_end].index,
-                y=dam_per_day.loc[date_start:date_end]['checkin'] + dam_per_day.loc[date_start:date_end]['checkout'],
-                name="dam checkins + checkouts per day"))
+                x=trace2.loc[start_dt:end_dt].index,
+                y=trace2.loc[start_dt:end_dt][column],
+                text = column,
+                name= tracetitle))
+
+        fig.update_layout(
+            title="Sensor data + other source",
+            margin=dict(l=20, r=20, t=30, b=20),
+            width = 550,
+            height = 400)
+        fig.update_layout(legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01
+            ))
 
         st.plotly_chart(fig)
 
+
     with column2:
         st.header("Historical other data sources ")
+        fig2 = go.Figure()
+        fig2.add_trace(
+            go.Scatter(
+                x=trace2.loc[start_dt:end_dt].index,
+                y=trace2.loc[start_dt:end_dt][column],
+                text = column,
+                name= tracetitle))
+        fig2.update_layout(
+            title="GVB data",
+            margin=dict(l=20, r=20, t=35, b=20),
+            width = 400,
+            height = 200,
+            )
+
+        st.plotly_chart(fig2)
