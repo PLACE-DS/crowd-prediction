@@ -25,24 +25,30 @@ def app():
     #gvb
     dam = pd.read_csv('data/gvb/gvb_dam.csv')
     dam['datetime'] = pd.to_datetime(dam['datetime'])
+    dam['total'] =  dam['checkin'] + dam['checkout']
     dam_per_day = dam.resample('D', on='datetime').sum()
 
     nieuwmarkt = pd.read_csv('data/gvb/gvb_nieuwmarkt.csv')
     nieuwmarkt['datetime'] = pd.to_datetime(nieuwmarkt['datetime'])
     nieuwmarkt_per_day = nieuwmarkt.resample('D', on='datetime').sum()
-
+    nieuwmarkt['total'] =  nieuwmarkt['checkin'] + nieuwmarkt['checkout']
 
     #knmi
     knmi = pd.read_csv('data/knmi/knmi_for_baseline.csv')
     knmi['datetime'] = pd.to_datetime(knmi['datetime'])
     knmi_per_day = knmi.resample('D', on='datetime').sum()
 
-    column1, column2 = st.columns(2)
 
-    start_dt = st.date_input('Start date', value=cmsa_per_day.index.min())
-    end_dt = st.date_input('End date', value=cmsa_per_day.index.max())
+
+    with st.container():
+
+        start_dt = st.date_input('Start date', value=cmsa_per_day.index.min())
+        end_dt = st.date_input('End date', value=cmsa_per_day.index.max())
 
     #make plots
+
+    column1, column2 = st.columns(2)
+
 
     with column1:
         st.header("CMSA + other data sources")
@@ -50,16 +56,13 @@ def app():
         trace2radio = st.radio("Second trace", ("GVB", "KNMI", "Parking", "Covid-19 cases", "Events"))
         if trace2radio == 'GVB':
             trace2 = dam_per_day
-            column = 'checkin'
-            tracetitle = "dam checkins per day"
+            column = 'total'
+            tracetitle = "dam check in+out per day"
         elif trace2radio == 'KNMI':
             trace2 = knmi_per_day
             column = 'temperature'
             tracetitle = 'temperature per day'
 
-
-        date_start = '2020-09-01'
-        date_end = '2020-09-30'
 
         fig = go.Figure()
         fig.add_trace(
@@ -78,8 +81,9 @@ def app():
         fig.update_layout(
             title="Sensor data + other source",
             margin=dict(l=20, r=20, t=30, b=20),
-            width = 550,
-            height = 400)
+            # width = 550,
+            # height = 400)
+            )
         fig.update_layout(legend=dict(
             yanchor="top",
             y=0.99,
@@ -92,7 +96,13 @@ def app():
 
     with column2:
         st.header("Historical other data sources ")
+        options = st.multiselect(
+         'Stations',
+         ['Dam','Nieuwmarkt'],
+         ['Dam'])
 
+        in_check = st.checkbox('check-ins')
+        out_check = st.checkbox('check-outs')
 
         fig2 = go.Figure()
         fig2.add_trace(
@@ -125,4 +135,5 @@ def app():
 
         st.plotly_chart(fig2)
 
+        knmi_radio = st.radio("Select KMNI data", ['Temperature',' Precipitation','Cloud cover', 'Wind speed'])
         st.plotly_chart(fig3)
