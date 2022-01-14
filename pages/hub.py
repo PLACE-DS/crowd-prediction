@@ -39,6 +39,9 @@ def app():
 
     column1, column2 = st.columns(2)
 
+    start_dt = st.date_input('Start date', value=cmsa_per_day.index.min())
+    end_dt = st.date_input('End date', value=cmsa_per_day.index.max())
+
     #make plots
 
     with column1:
@@ -54,8 +57,6 @@ def app():
             column = 'temperature'
             tracetitle = 'temperature per day'
 
-        start_dt = st.date_input('Start date', value=cmsa_per_day.index.min())
-        end_dt = st.date_input('End date', value=cmsa_per_day.index.max())
 
         date_start = '2020-09-01'
         date_end = '2020-09-30'
@@ -91,11 +92,13 @@ def app():
 
     with column2:
         st.header("Historical other data sources ")
+
+
         fig2 = go.Figure()
         fig2.add_trace(
             go.Scatter(
-                x=trace2.loc[start_dt:end_dt].index,
-                y=trace2.loc[start_dt:end_dt][column],
+                x=dam_per_day.loc[start_dt:end_dt].index,
+                y=dam_per_day.loc[start_dt:end_dt]['checkin'],
                 text = column,
                 name= tracetitle))
         fig2.update_layout(
@@ -105,4 +108,21 @@ def app():
             height = 200,
             )
 
+
+        fig3 = go.Figure()
+        fig3.add_trace(
+            go.Scatter(
+                x=knmi_per_day.loc[start_dt:end_dt].index,
+                y=knmi_per_day.loc[start_dt:end_dt]['temperature'],
+                text = column,
+                name= tracetitle))
+        fig3.update_layout(
+            title="KNMI data",
+            margin=dict(l=20, r=20, t=35, b=20),
+            width = 400,
+            height = 200,
+            )
+
         st.plotly_chart(fig2)
+
+        st.plotly_chart(fig3)
