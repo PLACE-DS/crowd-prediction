@@ -36,6 +36,15 @@ def app():
         map = get_map()
         st.pydeck_chart(map)
 
+        day = st.slider('Days ahead', 0, 7, 1)
+        hour = st.slider('Hour of the day:', value=datetime.time(00, 00, 00),
+                              min_value=datetime.time(00, 00, 00),
+                              max_value=datetime.time(23, 45, 00),
+                              step=datetime.timedelta(minutes=15),
+                              format='H:mm')
+        prediction_date = datetime.timedelta(days=day) + datetime.date.today()
+        st.write("Prediction for day: ", prediction_date, ", at: ", hour)
+
     with column2:
         st.header("Overcrowdedness")
         crowds = get_crowd()
@@ -63,20 +72,22 @@ sensors_info = pd.read_csv('data/sensors-info.csv')
 # CMSA-GAWW-11 - 52.374611, 4.899833 (52°22'28.6"N 4°53'59.4"E)
 # CMSA-GAWW-12 - 52.373883, 4.898653 (52°22'26.0"N 4°53'55.2"E)
 # CMSA-GAWW-14 - 52.373571, 4.898272 (52°22'24.9"N 4°53'53.8"E)
-
-
-def get_map():
-    locations_df = pd.DataFrame(
+locations_df = pd.DataFrame(
         [[52.374611, 4.899833], [52.373883, 4.898653], [52.373571, 4.898272]],
         columns=['lat', 'lon'])
 
+def get_map():
     location1_df = pd.DataFrame([[52.374611, 4.899833]], columns=['lat', 'lon'])
     location2_df = pd.DataFrame([[52.373883, 4.898653]], columns=['lat', 'lon'])
     location3_df = pd.DataFrame([[52.373571, 4.898272]], columns=['lat', 'lon'])
 
-    color_red = '[255,0,0, 160]'
+    color_red = '[255,0,0, 160]' 
+    red = '[255,0,0]'
     color_yellow = '[255,255,0, 160]'
+    yellow = '[255,255,0]'
     color_green = '[0,255,0, 160]'
+    green = '[0,255,0]'
+    st.write(green.replace(']',',160]'))
 
     # gg = get_crowd()
 
@@ -111,6 +122,27 @@ def get_map():
                 get_position='[lon, lat]',
                 get_color=color_green,
                 get_radius=25,
+            ),
+            pdk.Layer(
+                'ScatterplotLayer',
+                data=location1_df,
+                get_position='[lon, lat]',
+                get_color=red,
+                get_radius=10,
+            ),
+            pdk.Layer(
+                'ScatterplotLayer',
+                data=location2_df,
+                get_position='[lon, lat]',
+                get_color=yellow,
+                get_radius=10,
+            ),
+            pdk.Layer(
+                'ScatterplotLayer',
+                data=location3_df,
+                get_position='[lon, lat]',
+                get_color=green,
+                get_radius=10,
             ),
         ],
     )
