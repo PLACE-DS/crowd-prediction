@@ -30,8 +30,9 @@ def app():
 
     nieuwmarkt = pd.read_csv('data/gvb/gvb_nieuwmarkt.csv')
     nieuwmarkt['datetime'] = pd.to_datetime(nieuwmarkt['datetime'])
-    nieuwmarkt_per_day = nieuwmarkt.resample('D', on='datetime').sum()
     nieuwmarkt['total'] =  nieuwmarkt['checkin'] + nieuwmarkt['checkout']
+    nieuwmarkt_per_day = nieuwmarkt.resample('D', on='datetime').sum()
+
 
     #knmi
     knmi = pd.read_csv('data/knmi/knmi_for_baseline.csv')
@@ -40,100 +41,115 @@ def app():
 
 
 
+    #stations map
+    stations = {'Dam':dam_per_day, 'Nieuwmarkt':nieuwmarkt_per_day}
+
+
+
     with st.container():
 
         start_dt = st.date_input('Start date', value=cmsa_per_day.index.min())
         end_dt = st.date_input('End date', value=cmsa_per_day.index.max())
 
-    #make plots
 
-    column1, column2 = st.columns(2)
+        column1, column2 = st.columns([0.8,0.5])
 
+        with column1:
+            #COMBINATION PLOT
+            st.header("CMSA + other data sources")
 
-    with column1:
-        st.header("CMSA + other data sources")
+            trace2radio = st.radio("Second trace", ("GVB", "KNMI"))
+            if trace2radio == 'GVB':
+                trace2 = dam_per_day
+                column = 'total'
+                tracetitle = "check in+out per day"
+            elif trace2radio == 'KNMI':
+                trace2 = knmi_per_day
+                column = 'cloud_cover'
+                tracetitle = 'temperature per day'
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=cmsa_per_day.loc[start_dt:end_dt].index,
+                    y=cmsa_per_day.loc[start_dt:end_dt]['total'],
+                    text = 'total',
+                    name ='passengers by day'))
+            fig.add_trace(
+                go.Scatter(
+                    x=trace2.loc[start_dt:end_dt].index,
+                    y=trace2.loc[start_dt:end_dt][column],
+                    text = column,
+                    name= tracetitle))
 
-        trace2radio = st.radio("Second trace", ("GVB", "KNMI", "Parking", "Covid-19 cases", "Events"))
-        if trace2radio == 'GVB':
-            trace2 = dam_per_day
-            column = 'total'
-            tracetitle = "dam check in+out per day"
-        elif trace2radio == 'KNMI':
-            trace2 = knmi_per_day
-            column = 'temperature'
-            tracetitle = 'temperature per day'
+            fig.update_layout(
+                title="Sensor data + other source",
+                margin=dict(l=20, r=20, t=30, b=20),
+                # width = 550,
+                # height = 400
+                )
 
+            fig.update_layout(legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01
+                ))
 
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=cmsa_per_day.loc[start_dt:end_dt].index,
-                y=cmsa_per_day.loc[start_dt:end_dt]['total'],
-                text = 'total',
-                                name ='passengers by day'))
-        fig.add_trace(
-            go.Scatter(
-                x=trace2.loc[start_dt:end_dt].index,
-                y=trace2.loc[start_dt:end_dt][column],
-                text = column,
-                name= tracetitle))
-
-        fig.update_layout(
-            title="Sensor data + other source",
-            margin=dict(l=20, r=20, t=30, b=20),
-            # width = 550,
-            # height = 400)
-            )
-        fig.update_layout(legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01
-            ))
-
-        st.plotly_chart(fig)
+            st.plotly_chart(fig,use_container_width=True)
 
 
-    with column2:
-        st.header("Historical other data sources ")
-        options = st.multiselect(
-         'Stations',
-         ['Dam','Nieuwmarkt'],
-         ['Dam'])
-
-        in_check = st.checkbox('check-ins')
-        out_check = st.checkbox('check-outs')
-
-        fig2 = go.Figure()
-        fig2.add_trace(
-            go.Scatter(
-                x=dam_per_day.loc[start_dt:end_dt].index,
-                y=dam_per_day.loc[start_dt:end_dt]['checkin'],
-                text = column,
-                name= tracetitle))
-        fig2.update_layout(
-            title="GVB data",
-            margin=dict(l=20, r=20, t=35, b=20),
-            width = 400,
-            height = 200,
-            )
+        with column2:
+        #GVB PLOT
+            st.header("GVB")
+            options_gvb = st.multiselect(
+             'Stations',
+             ['Dam','Nieuwmarkt', 'Nieuwezijds Kolk'],'Dam')
+            radio_gvb = st.radio(' ', ('checkin', 'checkout', 'total'))
 
 
-        fig3 = go.Figure()
-        fig3.add_trace(
-            go.Scatter(
-                x=knmi_per_day.loc[start_dt:end_dt].index,
-                y=knmi_per_day.loc[start_dt:end_dt]['temperature'],
-                text = column,
-                name= tracetitle))
-        fig3.update_layout(
-            title="KNMI data",
-            margin=dict(l=20, r=20, t=35, b=20),
-            width = 400,
-            height = 200,
-            )
+            fig2 = go.Figure()
+            for i in options_gvb:
+                fig2.add_trace(
+                    go.Scatter(
+                        x=stations[i].loc[start_dt:end_dt].index,
+                        y=stations[i].loc[start_dt:end_dt][radio_gvb],
+                        text = column,
+                        name= str(i) + " "+str(radio_gvb)))
 
-        st.plotly_chart(fig2)
+            fig2.update_layout(
+                title="GVB data",
+                margin=dict(l=20, r=20, t=35, b=20),
+                width = 400,
+                height = 200,
+                )
+            fig2.update_layout(legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01
+                ))
+            st.plotly_chart(fig2,use_container_width=True)
 
-        knmi_radio = st.radio("Select KMNI data", ['Temperature',' Precipitation','Cloud cover', 'Wind speed'])
-        st.plotly_chart(fig3)
+            #KNMI PLOT
+            knmi_mapping = {'Temperature':'temperature','Precipitation':'precipitation_h','Cloud cover':'cloud_cover',
+            'Wind speed':'wind_speed'}
+            st.header("KNMI")
+            knmi_radio = st.radio("Select KMNI data", ['Temperature','Precipitation','Cloud cover','Wind speed'])
+
+
+            fig3 = go.Figure()
+            fig3.add_trace(
+                go.Scatter(
+                    x=knmi_per_day.loc[start_dt:end_dt].index,
+                    y=knmi_per_day.loc[start_dt:end_dt][knmi_mapping[knmi_radio]],
+                    text = column,
+                    name= tracetitle))
+            fig3.update_layout(
+                title="KNMI data",
+                margin=dict(l=20, r=20, t=35, b=20),
+                width = 400,
+                height = 200,
+                )
+
+
+            st.plotly_chart(fig3, use_container_width=True)
