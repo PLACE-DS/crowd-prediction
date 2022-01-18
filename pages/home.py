@@ -21,38 +21,41 @@ locations = {'GAWW-11': [52.374611, 4.899833],
              'GAWW-14': [52.373571, 4.898272]}
 
 def app():
-    w1, w2, w3, w4, w5, w6 = st.columns(6)
-    st.title('Homepage')
-    w1.markdown("![weather icon](" + icon + ")")
-    w2.metric("Temperature", str(weather['current']['temp_c']) + " °C")
-    w3.metric("Wind", str(weather['current']['wind_kph'])+ " kph")
+    with st.container():
+        w1, w2, w3, w4, w5, w6 = st.columns(6)
+        st.title('Homepage')
+        w1.markdown("![weather icon](" + icon + ")")
+        w2.metric("Temperature", str(weather['current']['temp_c']) + " °C")
+        w3.metric("Wind", str(weather['current']['wind_kph'])+ " kph")
 
-    #column1, column2 = st.columns(2)
-    column1, column2 = st.columns([3,2])
+        #column1, column2 = st.columns(2)
+        column1, column2 = st.columns([3,2])
 
-    with column1:
-        st.header("Prediction view")
-        #st.map(locations_df, zoom=14.5)
-        map = get_map()
-        st.pydeck_chart(map)
+        with column1:
+            st.header("Prediction view")
+            #st.map(locations_df, zoom=14.5)
+            map = get_map()
+            st.pydeck_chart(map)
 
-        day = st.slider('Days ahead', 0, 7, 1)
-        hour = st.slider('Hour of the day:', value=datetime.time(00, 00, 00),
-                              min_value=datetime.time(00, 00, 00),
-                              max_value=datetime.time(23, 45, 00),
-                              step=datetime.timedelta(minutes=15),
-                              format='H:mm')
-        prediction_date = datetime.timedelta(days=day) + datetime.date.today()
-        st.write("Prediction for day: ", prediction_date, ", at: ", hour)
+            day = st.slider('Days ahead', 0, 7, 1)
+            hour = st.slider('Hour of the day:', value=datetime.time(00, 00, 00),
+                                  min_value=datetime.time(00, 00, 00),
+                                  max_value=datetime.time(23, 45, 00),
+                                  step=datetime.timedelta(minutes=15),
+                                  format='H:mm')
+            prediction_date = datetime.timedelta(days=day) + datetime.date.today()
+            st.write("Prediction for day: ", prediction_date, ", at: ", hour)
 
-    with column2:
-        st.header("Overcrowdedness")
-        crowds = get_crowd()
-        for loc in crowds:
-            st.subheader('LOCATION: ' + loc)
-            st.write(crowds[loc]['yellow'])
-            st.write(crowds[loc]['red'])
+        with column2:
+            st.header("Overcrowdedness")
+            crowds = get_crowd()
+            for loc in crowds:
+                st.subheader('LOCATION: ' + loc)
+                st.write(crowds[loc]['yellow'])
+                st.write(crowds[loc]['red'])
 
+            st.header("Public transport")
+        
 
 
 # GET THE CURRENT WEATHER IN AMSTERDAM:
