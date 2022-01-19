@@ -1,3 +1,4 @@
+from tracemalloc import start
 import streamlit as st
 import requests as re 
 import streamlit as st
@@ -13,66 +14,60 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from st_aggrid import AgGrid
 
-st.set_page_config(layout="wide")
-
 # Analyzed sensors:
 locations = {'GAWW-11': [52.374611, 4.899833],
              'GAWW-12': [52.373883, 4.898653],
              'GAWW-14': [52.373571, 4.898272]}
 
 def app():
-    #with st.container():
-    first_forecast, last_forecast = get_dates()
-    w1, w2, w3, w4, w5, w6 = st.columns(6)
-    #st.title('Homepage')
-    w1.markdown("![weather icon](" + icon + ")")
-    w2.metric("Temperature", str(weather['current']['temp_c']) + " °C")
-    w3.metric("Wind", str(weather['current']['wind_kph'])+ " kph")
+    with st.container():
+        first_forecast, last_forecast = get_dates()
+        w1, w2, w3, w4, w5, w6 = st.columns(6)
+        #st.title('Homepage')
+        w1.markdown("![weather icon](" + icon + ")")
+        w2.metric("Temperature", str(weather['current']['temp_c']) + " °C")
+        w3.metric("Wind", str(weather['current']['wind_kph'])+ " kph")
 
-    #column1, column2 = st.columns(2)
-    column1, column2 = st.columns([3,2])
+        #column1, column2 = st.columns(2)
+        column1, column2 = st.columns([3,2])
 
-    with column1:
-        st.header("Prediction view")
+        with column1:
+            st.header("Prediction view")
 
-        #display = st.select_slider('', options=['Map', 'Plot'])
-        #st.write('You are seeing a: ', display)
+            #display = st.select_slider('', options=['Map', 'Plot'])
+            display = st.radio("What do you want to see?", ("Map", "Plot"))
+            #st.write('You are seeing a: ', display)
 
-        display = st.selectbox('What do you want to see? map/plot',
-            ('Map', 'Plot'))
+            #display = st.selectbox('What do you want to see? map/plot',
+            #    ('Plot', 'Map'))
 
-        if display == 'Map':
-            #day = st.slider('Days ahead', 0, 7, 1)
-            day_pred = st.slider('Prediction day:', value=first_forecast,
-                                    min_value=first_forecast,
-                                    max_value=last_forecast,
-                                    step=datetime.timedelta(days=1))
-            hour = st.slider('Hour of the day:', value=datetime.time(00, 00, 00),
-                                    min_value=datetime.time(00, 00, 00),
-                                    max_value=datetime.time(23, 45, 00),
-                                    step=datetime.timedelta(minutes=15),
-                                    format='H:mm')
-            #prediction_date = datetime.timedelta(days=day) + datetime.date.today()
+            if display == 'Map':
+                #day = st.slider('Days ahead', 0, 7, 1)
+                day_pred = st.slider('Prediction day:', value=first_forecast,
+                                        min_value=first_forecast,
+                                        max_value=last_forecast,
+                                        step=datetime.timedelta(days=1))
+                hour = st.slider('Hour of the day:', value=datetime.time(00, 00, 00),
+                                        min_value=datetime.time(00, 00, 00),
+                                        max_value=datetime.time(23, 45, 00),
+                                        step=datetime.timedelta(minutes=15),
+                                        format='H:mm')
+                #prediction_date = datetime.timedelta(days=day) + datetime.date.today()
 
-            #st.map(locations_df, zoom=14.5)
-            map = get_map(day_pred, hour)
-            st.pydeck_chart(map)
+                #st.map(locations_df, zoom=14.5)
+                map = get_map(day_pred, hour)
+                st.pydeck_chart(map)
 
-            st.write("Prediction for day: ", day_pred.date(), ", at: ", hour)
+                st.write("Prediction for day: ", day_pred.date(), ", at: ", hour)
 
-        else:
-            get_plot()
+            else:
+                get_plot()
 
-    with column2:
-        st.header("Overcrowdedness")
-        crowds = get_crowd()
-        for loc in crowds:
-            st.subheader('LOCATION: ' + loc)
-            st.write(crowds[loc]['yellow'])
-            st.write(crowds[loc]['red'])
+        with column2:
+            st.header("Overcrowdedness")
+            display_crowds()
 
-        st.header("Public transport")
-
+    #st.markdown('', unsafe_allow_html=True)
 
 
 # GET THE CURRENT WEATHER IN AMSTERDAM:
@@ -96,6 +91,8 @@ locations_df = pd.DataFrame(
         [[52.374611, 4.899833], [52.373883, 4.898653], [52.373571, 4.898272]],
         columns=['lat', 'lon'])
 
+locations_names = {'GAWW-11': 'Korte Niezel', 'GAWW-12': 'Oudekennissteeg', 'GAWW-14': 'Oudezijds Voorburgwal 91'}
+
 def get_map(day_pred, hour):
     location1_df = pd.DataFrame([[52.374611, 4.899833]], columns=['lat', 'lon'])
     location2_df = pd.DataFrame([[52.373883, 4.898653]], columns=['lat', 'lon'])
@@ -107,7 +104,7 @@ def get_map(day_pred, hour):
         initial_view_state=pdk.ViewState(
             latitude=52.374,
             longitude=4.899,
-            zoom=14,
+            zoom=15,
             height=400,
             width='100%',
         ),
@@ -117,42 +114,42 @@ def get_map(day_pred, hour):
                 data=location1_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-11'].replace(']',',160]'),
-                get_radius=25,
+                get_radius=18,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location2_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-12'].replace(']',',160]'),
-                get_radius=25,
+                get_radius=18,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location3_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-14'].replace(']',',160]'),
-                get_radius=25,
+                get_radius=18,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location1_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-11'],
-                get_radius=10,
+                get_radius=7,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location2_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-12'],
-                get_radius=10,
+                get_radius=7,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location3_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-14'],
-                get_radius=10,
+                get_radius=7,
             ),
         ],
     )
@@ -161,6 +158,7 @@ def get_map(day_pred, hour):
 
 def get_crowd():
     crowds = {}
+    crowds_combined = {}
     for ind, loc in enumerate(locations):
         loc_info = sensors_info[sensors_info['objectnummer']=='CMSA-'+loc]
         loc_forecast = pd.read_csv('experiments/fake_forecasts_for_frontend/'+ loc +'.csv')
@@ -174,14 +172,70 @@ def get_crowd():
         red_forecast = loc_forecast[loc_forecast['prediction'] > loc_info['crowd_threshold_high'][ind]-600]
         crowds[loc] = {'yellow': yellow_forecast, 'red':red_forecast}
 
-    return crowds
+
+
+        # MERGE OVERCROWDED FORECASTS:
+        yellow = yellow_forecast.drop(['upper', 'lower'], axis=1)
+        yellow['overcrowdedness'] = 'yellow'
+        yellow.set_index('datetime')
+
+        red = red_forecast.drop(['upper', 'lower'], axis=1)
+        red['overcrowdedness'] = 'red'
+        red.set_index('datetime')
+
+        merged = pd.concat([yellow, red])
+        merged = merged.sort_values(by=['datetime'])
+
+        merged['start'] = pd.to_datetime(merged['datetime'], format='%Y-%m-%d %H:%M:%S', errors='ignore')
+        merged['end'] = pd.to_datetime(merged['datetime'], format='%Y-%m-%d %H:%M:%S', errors='ignore')
+
+        rowlist = []
+        cut_row = None
+        for row in merged.itertuples():
+            if cut_row is None:
+                cut_row = row._asdict()
+            elif not(cut_row.get('overcrowdedness') == row.overcrowdedness):
+                rowlist.append(cut_row)
+                cut_row = row._asdict()
+            elif (row.start - cut_row.get('end'))< datetime.timedelta(minutes=16):
+                cut_row['end'] = row.end
+            else:
+                rowlist.append(cut_row)
+                cut_row = row._asdict()
+        rowlist.append(cut_row)
+        combine_merged = pd.DataFrame.from_dict(rowlist)
+
+        crowds_combined[loc] = combine_merged
+
+    return crowds, crowds_combined
+
+def display_crowds():
+    crowds, crowds_combined = get_crowd()
+    for loc in crowds:
+        st.subheader(locations_names[loc])
+        if 'Index' in crowds_combined[loc].columns:
+            combined = crowds_combined[loc].drop(['Index', 'datetime', 'prediction'], axis=1)
+            combined = crowds_combined[loc]
+            combined['date'] = combined.start.dt.date
+            combined['start_time'] = combined.start.dt.time
+            combined['end_time'] = combined.start.dt.time
+            for date in combined.date.unique():
+                st.write(date)
+                dff = combined[combined['date'] == date]
+                for row in dff.itertuples():
+                    st.markdown('<i class="fas fa-circle" style="color: red;">', unsafe_allow_html=True)
+                    st.write(':circle: From ', row.start_time.strftime("%H:%M"), ' to ', row.end_time.strftime("%H:%M"))
+        else:
+            st.write('No overcrowded moments for this location in the next 7 days')
+
+
 
 def get_colors(day_pred, hour):
     red = '[255,0,0]'
     yellow = '[255,255,0]'
     green = '[0,255,0]'
 
-    crowds = get_crowd()
+    crowds, _ = get_crowd()
     date = datetime.datetime.combine(day_pred, hour)
     loc_colors = {}
 
@@ -214,27 +268,52 @@ def get_plot():
     all_forecasts['datetime2']=pd.to_datetime(all_forecasts.datetime)
     #all_forecasts['datetime2'] = all_forecasts.index
 
+    # Add the thresholds
+    for ind, loc in enumerate(locations):
+        loc_info = sensors_info[sensors_info['objectnummer']=='CMSA-'+loc]
+        all_forecasts[loc+'_th_low'] = loc_info['crowd_threshold_low'][ind]-500
+        all_forecasts[loc+'_th_high'] = loc_info['crowd_threshold_high'][ind]-600
+
+    colors_list = ['#D31222', '#69292E', '#445769']
+    colors_dict = {'GAWW-11': '#D31222', 'GAWW-12': '#69292E', 'GAWW-14': '#445769'}
+
     fig = go.Figure()
-    loc_radio = st.radio("Location", ("All", "GAWW-11", "GAWW-12", "GAWW-14"))
-    if loc_radio == 'All':
-        for ind, loc in enumerate(locations):
+    # loc_radio = st.radio("Location", ("All", "GAWW-11", "GAWW-12", "GAWW-14"))
+
+    options_loc = st.multiselect('Select locations', ["GAWW-11", "GAWW-12", "GAWW-14"], ["GAWW-11", "GAWW-12", "GAWW-14"])
+
+
+    if len(options_loc) > 0:
+        for ind, loc in enumerate(options_loc):
             fig.add_trace(
                 go.Scatter(
                     x=all_forecasts.datetime2,
                     y=all_forecasts[loc],
                     text = loc,
-                    name = 'crowd'))
+                    name = loc,
+                    line_color = colors_dict[loc],
+                    line_width=2))
+            if len(options_loc) == 1:
+                fig.add_trace(
+                    go.Scatter(
+                        x=all_forecasts.datetime2,
+                        y=all_forecasts[loc+'_th_low'],
+                        line_color = colors_dict[loc],
+                        text = 'Low threshold',
+                        name = 'Low threshold',
+                        line_width=0.5))
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=all_forecasts.datetime2,
+                        y=all_forecasts[loc+'_th_high'],
+                        line_color = colors_dict[loc],
+                        text = 'High threshold',
+                        name = 'High threshold',
+                        line_width=0.5))
     else:
-        fig.add_trace(
-            go.Scatter(
-                x=all_forecasts.datetime2,
-                y=all_forecasts[loc_radio],
-                text = loc_radio,
-                name = 'crowd'))
-        # fig.add_trace(
-            # go.Scatter(
-                # ADD DASHED THRESHOLDS
-                # ))
+        pass
+
 
     fig.update_layout(
         title="7 Day prediction",
