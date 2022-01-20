@@ -19,20 +19,38 @@ locations = {'GAWW-11': [52.374611, 4.899833],
              'GAWW-12': [52.373883, 4.898653],
              'GAWW-14': [52.373571, 4.898272]}
 
+# FORECASTS FOR THE 3 LOCATIONS:
+forecast1 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-11.csv')
+forecast2 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-12.csv')
+forecast3 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-14.csv')
+sensors_info = pd.read_csv('data/sensors-info.csv')
+
+def get_dates():
+    first_forecast_str = forecast1['datetime'].iloc[0]
+    first_forecast = datetime.datetime.strptime(first_forecast_str, '%Y-%m-%d %H:%M:%S')
+    last_forecast_str = forecast1['datetime'].iloc[-1]
+    last_forecast = datetime.datetime.strptime(last_forecast_str, '%Y-%m-%d %H:%M:%S')
+
+    return first_forecast, last_forecast
+
+first_forecast, last_forecast = get_dates()
+
+day_pred = first_forecast
+hour = datetime.time(00, 00, 00)
+
 def app():
     with st.container():
-        first_forecast, last_forecast = get_dates()
         #st.title('Homepage')
-
-        get_weather()
+        
+        ww, w1, w2, w3, w4, w5 = st.columns(6)
+        display = ww.select_slider('', options=['Map', 'Plot'])
+        get_weather(w3, w4, w5)
         #column1, column2 = st.columns(2)
-        column1, column2 = st.columns([3,2])
-
+        column1, column2 = st.columns([5,2])
         with column1:
             st.header("Prediction view")
 
             #display = st.select_slider('', options=['Map', 'Plot'])
-            display = st.radio("What do you want to see?", ("Map", "Plot"))
             #st.write('You are seeing a: ', display)
 
             #display = st.selectbox('What do you want to see? map/plot',
@@ -40,6 +58,15 @@ def app():
 
             if display == 'Map':
                 #day = st.slider('Days ahead', 0, 7, 1)
+                #prediction_date = datetime.timedelta(days=day) + datetime.date.today()
+                global day_pred
+                global hour
+
+                #st.map(locations_df, zoom=14.5)
+                map = get_map()
+                st.pydeck_chart(map)
+
+                st.write("Prediction for day: ", day_pred.date(), ", at: ", hour)
                 day_pred = st.slider('Prediction day:', value=first_forecast,
                                         min_value=first_forecast,
                                         max_value=last_forecast,
@@ -49,13 +76,6 @@ def app():
                                         max_value=datetime.time(23, 45, 00),
                                         step=datetime.timedelta(minutes=15),
                                         format='H:mm')
-                #prediction_date = datetime.timedelta(days=day) + datetime.date.today()
-
-                #st.map(locations_df, zoom=14.5)
-                map = get_map(day_pred, hour)
-                st.pydeck_chart(map)
-
-                st.write("Prediction for day: ", day_pred.date(), ", at: ", hour)
 
             else:
                 get_plot()
@@ -67,12 +87,8 @@ def app():
 
     #st.markdown('', unsafe_allow_html=True)
 
-
-# FORECASTS FOR THE 3 LOCATIONS:
-forecast1 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-11.csv')
-forecast2 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-12.csv')
-forecast3 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-14.csv')
-sensors_info = pd.read_csv('data/sensors-info.csv')
+day_pred = first_forecast
+hour = datetime.time(00, 00, 00)
 
 # SENSORS LOCATION:
 # CMSA-GAWW-11 - 52.374611, 4.899833 (52°22'28.6"N 4°53'59.4"E)
@@ -84,7 +100,7 @@ locations_df = pd.DataFrame(
 
 locations_names = {'GAWW-11': 'Korte Niezel', 'GAWW-12': 'Oudekennissteeg', 'GAWW-14': 'Oudezijds Voorburgwal 91'}
 
-def get_weather():
+def get_weather(w1, w2, w3):
     try:
         # GET THE CURRENT WEATHER IN AMSTERDAM:
         r = re.get('http://api.weatherapi.com/v1/current.json?key=16a275e088724a3eba1143500221201&q=Amsterdam&aqi=no')
@@ -93,15 +109,16 @@ def get_weather():
         #st.write("Current temperature in Amsterdam:",weather['current']['temp_c'],"degrees Celsius")
         #st.markdown("![weather icon](" + icon + ")")
 
-        w1, w2, w3, w4, w5, w6 = st.columns(6)
-        w1.markdown("![weather icon](" + icon + ")")
-        w2.metric("Temperature", str(weather['current']['temp_c']) + " °C")
-        w3.metric("Wind", str(weather['current']['wind_kph'])+ " kph")
+        w3.markdown("![weather icon](" + icon + ")")
+        w1.metric("Temperature", str(weather['current']['temp_c']) + " °C")
+        w2.metric("Wind", str(weather['current']['wind_kph'])+ " kph")
     except:
         # In case there's no internet connection
         pass
 
-def get_map(day_pred, hour):
+def get_map():
+    global day_pred
+    global hour
     location1_df = pd.DataFrame([[52.374611, 4.899833]], columns=['lat', 'lon'])
     location2_df = pd.DataFrame([[52.373883, 4.898653]], columns=['lat', 'lon'])
     location3_df = pd.DataFrame([[52.373571, 4.898272]], columns=['lat', 'lon'])
@@ -112,7 +129,7 @@ def get_map(day_pred, hour):
         initial_view_state=pdk.ViewState(
             latitude=52.374,
             longitude=4.899,
-            zoom=15,
+            zoom=16,
             height=400,
             width='100%',
         ),
@@ -241,8 +258,11 @@ def display_crowds():
                     #if row.start_time == row.end_time:
                       #   row.end_time = (row.end + datetime.timedelta(minutes=15))
                     #st.markdown('<i class="fas fa-circle" style="color: red;">', unsafe_allow_html=True)
-                    # st.write('From ', row.start_time.strftime("%H:%M"), ' to ', end.strftime("%H:%M"))
-                    st.markdown('<a style="color: '+ row.overcrowdedness +'; font-weight: 900; padding-left: 15px"> O</a>  From '+  row.start_time.strftime("%H:%M") + ' to ' + end.strftime("%H:%M"), unsafe_allow_html=True)
+                    if row.overcrowdedness == 'red':
+                        st.write('.     🔴 From ', row.start_time.strftime("%H:%M"), ' to ', end.strftime("%H:%M"))
+                    else:
+                        st.write('.     🟡 From ', row.start_time.strftime("%H:%M"), ' to ', end.strftime("%H:%M"))
+                    #st.markdown('<a style="color: '+ row.overcrowdedness +'; font-weight: 900; padding-left: 15px"> O</a>  From '+  row.start_time.strftime("%H:%M") + ' to ' + end.strftime("%H:%M"), unsafe_allow_html=True)
         else:
             st.write('No overcrowded moments for this location in the next 7 days')
 
@@ -266,16 +286,6 @@ def get_colors(day_pred, hour):
             loc_colors[loc] = green
 
     return loc_colors
-
-def get_dates():
-    first_forecast_str = forecast1['datetime'].iloc[0]
-    first_forecast = datetime.datetime.strptime(first_forecast_str, '%Y-%m-%d %H:%M:%S')
-    last_forecast_str = forecast1['datetime'].iloc[-1]
-    last_forecast = datetime.datetime.strptime(last_forecast_str, '%Y-%m-%d %H:%M:%S')
-    # st.write(first_forecast.date())
-    # st.write(last_forecast.date())
-
-    return first_forecast, last_forecast
 
 def get_plot():
     all_forecasts = forecast1.drop(['upper', 'lower'], axis=1)
