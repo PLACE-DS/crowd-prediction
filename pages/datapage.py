@@ -22,13 +22,16 @@ def app():
     cmsa_all['datetime'] = pd.to_datetime(cmsa_all['datetime'])
     cmsa_per_day = cmsa_all.resample('D', on='datetime').sum()
     sensors = cmsa_all.columns[1:4]
-    columns = cmsa_all.columns[4:]
-    # knmi_columns = [19:]
-    # gvb_columns = [7:10]
-    # tourism_columns = cmsa_all.columns[11:15]
-    # covid_columns = [16:18]
+    columns = cmsa_all.columns[6:]
+    knmi_columns = cmsa_all.columns[19:]
+    gvb_columns = cmsa_all.columns[7:10]
+    tourism_columns = cmsa_all.columns[11:15]
+    covid_columns = cmsa_all.columns[16:18].tolist()
+    covid_columns.append(cmsa_all.columns[6])
+    
+
     st.title('Data and Code')
-    st.markdown('Use the date selector and column checkboxes to export the data of your choice. Our')
+    st.markdown('Use the date selector and column checkboxes to export the data of your choice.')
 
     start_dt = st.date_input('Start date',
         value=cmsa_per_day.index.min(),
@@ -40,22 +43,41 @@ def app():
         min_value = cmsa_per_day.index.min(),
         max_value = cmsa_per_day.index.max())
 
-    st.write(start_dt,end_dt)
-
     st.header('Select sensors')
     check_sensors = [st.checkbox(i, key=i) for i in sensors]
     st.header('Select metadata')
-    check_columns = [st.checkbox(i, key=i) for i in columns]
+    all_metadata = st.checkbox('Select all metadata')
+    if all_metadata:
+        downloadcolumns = columns
+
+    with st.expander('Covid'):
+        check_covid = [st.checkbox(i, key=i) for i in covid_columns]
+
+    with st.expander('GVB'):
+        check_gvb = [st.checkbox(i, key=i) for i in gvb_columns]
+
+    with st.expander('KNMI'):
+        check_knmi = [st.checkbox(i, key=i) for i in knmi_columns]
+
+    with st.expander('Tourism'):
+        check_tourism = [st.checkbox(i, key=i) for i in tourism_columns]
+
+    #check_columns = [st.checkbox(i, key=i) for i in columns]
     checked_sensors = [stock for stock, checked in zip(sensors, check_sensors) if checked]
-    checked_columns = [stock for stock, checked in zip(columns, check_columns) if checked]
+    checked_covid = [stock for stock, checked in zip(covid_columns, check_covid) if checked]
+    checked_gvb = [stock for stock, checked in zip(gvb_columns, check_gvb) if checked]
+    checked_knmi = [stock for stock, checked in zip(knmi_columns, check_knmi) if checked]
+    checked_tourism = [stock for stock, checked in zip(tourism_columns, check_tourism) if checked]
 
     def convert_df(df):
         return df.to_csv()
 
-    downloadcolumns = ['datetime'] + list(checked_sensors) + list(checked_columns)
-   
+    downloadcolumns = ['datetime'] + list(checked_sensors) + list(checked_covid) + list(checked_gvb) + list(checked_knmi) + list(checked_tourism)
+    df_to_download = cmsa_all[downloadcolumns]
+    df_to_download['datetime'] = pd.to_datetime(df_to_download['datetime'])
+    df_to_download = df_to_download[(df_to_download['datetime'].dt.date > start_dt) & (df_to_download['datetime'].dt.date < end_dt)]
+    
+    downloadcsv = convert_df(df_to_download)
+    
 
-    downloadcsv = convert_df(cmsa_all[downloadcolumns])
-
-    st.download_button(label = 'download .csv', data=downloadcsv[(downloadcsv['datetime'] > start_dt) & (downloadcsv['datetime'] < end_dt)], mime='text/csv')
-
+    st.download_button(label = 'download .csv', data=downloadcsv,  mime='text/csv')
