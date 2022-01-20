@@ -37,13 +37,23 @@ first_forecast, last_forecast = get_dates()
 
 day_pred = first_forecast
 hour = datetime.time(00, 00, 00)
+display = 'Map'
+horizon = '1 day'
 
 def app():
     with st.container():
         #st.title('Homepage')
-        
+
         ww, w1, w2, w3, w4, w5 = st.columns(6)
-        display = ww.select_slider('', options=['Map', 'Plot'])
+        global display
+        if ww.button("📍 Map view ", key='map_button', on_click=style_button_row, kwargs={'clicked_button_ix': 'Map'}):
+            display = 'Map'
+
+        if w1.button("📈 Plot view ", key='plot_button',on_click=style_button_row, kwargs={'clicked_button_ix': 'Plot'}):
+            display = 'Plot'
+
+        #display = ww.select_slider('', options=['Map', 'Plot'])
+        #display = ww.radio('', options=['Map', 'Plot'])
         get_weather(w3, w4, w5)
         #column1, column2 = st.columns(2)
         column1, column2 = st.columns([5,2])
@@ -79,6 +89,10 @@ def app():
 
             else:
                 get_plot()
+                global horizon
+                horizon = st.select_slider('Prediction horizon:', options=['1 day', '2 days', '3 days', '4 days', '5 days', '6 days', '7 days'])
+                #horizon = st.radio("Prediction horizon", ("1 day", "3 days", "7 days"))
+
 
         with column2:
             st.header("Overcrowdedness")
@@ -86,6 +100,30 @@ def app():
             display_crowds()
 
     #st.markdown('', unsafe_allow_html=True)
+
+
+def style_button_row(clicked_button_ix):
+
+    clicked_style = """
+    div[data-testid*="stHorizontalBlock"] > div:nth-child(%(nth_child)s):nth-last-child(%(nth_last_child)s) button {
+        border-color: rgb(255, 75, 75);
+        color: rgb(255, 75, 75);
+        box-shadow: rgba(255, 75, 75, 0.5) 0px 0px 0px 0.2rem;
+        outline: currentcolor none medium;
+    }
+    """
+    unclicked_style = """
+    div[data-testid*="stHorizontalBlock"] > div:nth-child(%(nth_child)s):nth-last-child(%(nth_last_child)s) button {
+        pointer-events: none;
+        cursor: not-allowed;
+        opacity: 0.65;
+        filter: alpha(opacity=65);
+        -webkit-box-shadow: none;
+        box-shadow: none;
+    }
+    """
+    st.markdown(f"<style>{clicked_style}</style>", unsafe_allow_html=True)
+
 
 day_pred = first_forecast
 hour = datetime.time(00, 00, 00)
@@ -99,6 +137,22 @@ locations_df = pd.DataFrame(
         columns=['lat', 'lon'])
 
 locations_names = {'GAWW-11': 'Korte Niezel', 'GAWW-12': 'Oudekennissteeg', 'GAWW-14': 'Oudezijds Voorburgwal 91'}
+
+all_forecasts = forecast1.drop(['upper', 'lower'], axis=1)
+all_forecasts = all_forecasts.rename(columns={'prediction': 'GAWW-11'})
+all_forecasts['GAWW-12'] = forecast2.prediction
+all_forecasts['GAWW-14'] = forecast3.prediction
+all_forecasts['total'] = all_forecasts['GAWW-11'] + all_forecasts['GAWW-12'] + all_forecasts['GAWW-14']
+all_forecasts['datetime2']=pd.to_datetime(all_forecasts.datetime)
+#all_forecasts['datetime2'] = all_forecasts.index
+
+# Add the thresholds
+for ind, loc in enumerate(locations):
+    loc_info = sensors_info[sensors_info['objectnummer']=='CMSA-'+loc]
+    all_forecasts[loc+'_th_low'] = loc_info['crowd_threshold_low'][ind]-500
+    all_forecasts[loc+'_th_high'] = loc_info['crowd_threshold_high'][ind]-600
+
+
 
 def get_weather(w1, w2, w3):
     try:
@@ -123,6 +177,10 @@ def get_map():
     location2_df = pd.DataFrame([[52.373883, 4.898653]], columns=['lat', 'lon'])
     location3_df = pd.DataFrame([[52.373571, 4.898272]], columns=['lat', 'lon'])
 
+    locations_text = pd.DataFrame([[52.374611, 4.899833-0.0009, 'Korte Niezel'],
+                                   [52.373883, 4.898653-0.0011, 'Oudekennissteeg'],
+                                   [52.373571, 4.898272-0.0015, 'Oudezijds Voorburgwal 91']], columns=['lat', 'lon', 'text'])
+
     loc_colors = get_colors(day_pred, hour)
     map = pdk.Deck(
         map_style='mapbox://styles/mapbox/light-v9',
@@ -139,42 +197,52 @@ def get_map():
                 data=location1_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-11'].replace(']',',160]'),
-                get_radius=18,
+                get_radius=15,
+            ),
+            pdk.Layer(
+                "TextLayer",
+                pickable=True,
+                data=locations_text,
+                get_position='[lon, lat]',
+                get_text="text",
+                get_size=25,
+                get_color=[0, 0, 0],
+                get_angle=0,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location2_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-12'].replace(']',',160]'),
-                get_radius=18,
+                get_radius=15,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location3_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-14'].replace(']',',160]'),
-                get_radius=18,
+                get_radius=15,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location1_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-11'],
-                get_radius=7,
+                get_radius=5,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location2_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-12'],
-                get_radius=7,
+                get_radius=5,
             ),
             pdk.Layer(
                 'ScatterplotLayer',
                 data=location3_df,
                 get_position='[lon, lat]',
                 get_color=loc_colors['GAWW-14'],
-                get_radius=7,
+                get_radius=5,
             ),
         ],
     )
@@ -259,9 +327,9 @@ def display_crowds():
                       #   row.end_time = (row.end + datetime.timedelta(minutes=15))
                     #st.markdown('<i class="fas fa-circle" style="color: red;">', unsafe_allow_html=True)
                     if row.overcrowdedness == 'red':
-                        st.write('.     🔴 From ', row.start_time.strftime("%H:%M"), ' to ', end.strftime("%H:%M"))
+                        st.write(' 🔴 From ', row.start_time.strftime("%H:%M"), ' to ', end.strftime("%H:%M"))
                     else:
-                        st.write('.     🟡 From ', row.start_time.strftime("%H:%M"), ' to ', end.strftime("%H:%M"))
+                        st.write(' 🟡 From ', row.start_time.strftime("%H:%M"), ' to ', end.strftime("%H:%M"))
                     #st.markdown('<a style="color: '+ row.overcrowdedness +'; font-weight: 900; padding-left: 15px"> O</a>  From '+  row.start_time.strftime("%H:%M") + ' to ' + end.strftime("%H:%M"), unsafe_allow_html=True)
         else:
             st.write('No overcrowded moments for this location in the next 7 days')
@@ -288,22 +356,15 @@ def get_colors(day_pred, hour):
     return loc_colors
 
 def get_plot():
-    all_forecasts = forecast1.drop(['upper', 'lower'], axis=1)
-    all_forecasts = all_forecasts.rename(columns={'prediction': 'GAWW-11'})
-    all_forecasts['GAWW-12'] = forecast2.prediction
-    all_forecasts['GAWW-14'] = forecast3.prediction
-    all_forecasts['total'] = all_forecasts['GAWW-11'] + all_forecasts['GAWW-12'] + all_forecasts['GAWW-14']
-    all_forecasts['datetime2']=pd.to_datetime(all_forecasts.datetime)
-    #all_forecasts['datetime2'] = all_forecasts.index
-
-    # Add the thresholds
-    for ind, loc in enumerate(locations):
-        loc_info = sensors_info[sensors_info['objectnummer']=='CMSA-'+loc]
-        all_forecasts[loc+'_th_low'] = loc_info['crowd_threshold_low'][ind]-500
-        all_forecasts[loc+'_th_high'] = loc_info['crowd_threshold_high'][ind]-600
-
+    global horizon
     colors_list = ['#D31222', '#69292E', '#445769']
     colors_dict = {'GAWW-11': '#D31222', 'GAWW-12': '#69292E', 'GAWW-14': '#445769'}
+
+    end_plot = first_forecast + datetime.timedelta(days = int(horizon.split(' da')[0]))
+
+    global all_forecasts
+    forecasts = all_forecasts[all_forecasts['datetime2'] < end_plot]
+
 
     fig = go.Figure()
     # loc_radio = st.radio("Location", ("All", "GAWW-11", "GAWW-12", "GAWW-14"))
@@ -315,8 +376,8 @@ def get_plot():
         for ind, loc in enumerate(options_loc):
             fig.add_trace(
                 go.Scatter(
-                    x=all_forecasts.datetime2,
-                    y=all_forecasts[loc],
+                    x=forecasts.datetime2,
+                    y=forecasts[loc],
                     text = loc,
                     name = loc,
                     line_color = colors_dict[loc],
@@ -324,8 +385,8 @@ def get_plot():
             if len(options_loc) == 1:
                 fig.add_trace(
                     go.Scatter(
-                        x=all_forecasts.datetime2,
-                        y=all_forecasts[loc+'_th_low'],
+                        x=forecasts.datetime2,
+                        y=forecasts[loc+'_th_low'],
                         line_color = colors_dict[loc],
                         text = 'Low threshold',
                         name = 'Low threshold',
@@ -333,8 +394,8 @@ def get_plot():
 
                 fig.add_trace(
                     go.Scatter(
-                        x=all_forecasts.datetime2,
-                        y=all_forecasts[loc+'_th_high'],
+                        x=forecasts.datetime2,
+                        y=forecasts[loc+'_th_high'],
                         line_color = colors_dict[loc],
                         text = 'High threshold',
                         name = 'High threshold',
