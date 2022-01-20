@@ -22,12 +22,9 @@ locations = {'GAWW-11': [52.374611, 4.899833],
 def app():
     with st.container():
         first_forecast, last_forecast = get_dates()
-        w1, w2, w3, w4, w5, w6 = st.columns(6)
         #st.title('Homepage')
-        w1.markdown("![weather icon](" + icon + ")")
-        w2.metric("Temperature", str(weather['current']['temp_c']) + " °C")
-        w3.metric("Wind", str(weather['current']['wind_kph'])+ " kph")
 
+        get_weather()
         #column1, column2 = st.columns(2)
         column1, column2 = st.columns([3,2])
 
@@ -65,17 +62,11 @@ def app():
 
         with column2:
             st.header("Overcrowdedness")
+            st.write('Predicted overcrowded moments for the next 7 days on the 3 locations:')
             display_crowds()
 
     #st.markdown('', unsafe_allow_html=True)
 
-
-# GET THE CURRENT WEATHER IN AMSTERDAM:
-r = re.get('http://api.weatherapi.com/v1/current.json?key=16a275e088724a3eba1143500221201&q=Amsterdam&aqi=no')
-weather = r.json()
-icon = "http:" + str(weather['current']['condition']['icon'])
-#st.write("Current temperature in Amsterdam:",weather['current']['temp_c'],"degrees Celsius")
-#st.markdown("![weather icon](" + icon + ")")
 
 # FORECASTS FOR THE 3 LOCATIONS:
 forecast1 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-11.csv')
@@ -92,6 +83,23 @@ locations_df = pd.DataFrame(
         columns=['lat', 'lon'])
 
 locations_names = {'GAWW-11': 'Korte Niezel', 'GAWW-12': 'Oudekennissteeg', 'GAWW-14': 'Oudezijds Voorburgwal 91'}
+
+def get_weather():
+    try:
+        # GET THE CURRENT WEATHER IN AMSTERDAM:
+        r = re.get('http://api.weatherapi.com/v1/current.json?key=16a275e088724a3eba1143500221201&q=Amsterdam&aqi=no')
+        weather = r.json()
+        icon = "http:" + str(weather['current']['condition']['icon'])
+        #st.write("Current temperature in Amsterdam:",weather['current']['temp_c'],"degrees Celsius")
+        #st.markdown("![weather icon](" + icon + ")")
+
+        w1, w2, w3, w4, w5, w6 = st.columns(6)
+        w1.markdown("![weather icon](" + icon + ")")
+        w2.metric("Temperature", str(weather['current']['temp_c']) + " °C")
+        w3.metric("Wind", str(weather['current']['wind_kph'])+ " kph")
+    except:
+        # In case there's no internet connection
+        pass
 
 def get_map(day_pred, hour):
     location1_df = pd.DataFrame([[52.374611, 4.899833]], columns=['lat', 'lon'])
@@ -176,7 +184,7 @@ def get_crowd():
 
         # MERGE OVERCROWDED FORECASTS:
         yellow = yellow_forecast.drop(['upper', 'lower'], axis=1)
-        yellow['overcrowdedness'] = 'yellow'
+        yellow['overcrowdedness'] = 'orange'
         yellow.set_index('datetime')
 
         red = red_forecast.drop(['upper', 'lower'], axis=1)
@@ -218,13 +226,23 @@ def display_crowds():
             combined = crowds_combined[loc]
             combined['date'] = combined.start.dt.date
             combined['start_time'] = combined.start.dt.time
-            combined['end_time'] = combined.start.dt.time
+            combined['end_time'] = combined.end.dt.time
+
             for date in combined.date.unique():
-                st.write(date)
+                #st.write(date.strftime("%d-%m-%Y"))
+                st.markdown('<p style="font-weight: bold;">' + date.strftime("%d-%m-%Y") + '</p>', unsafe_allow_html=True)
                 dff = combined[combined['date'] == date]
                 for row in dff.itertuples():
-                    st.markdown('<i class="fas fa-circle" style="color: red;">', unsafe_allow_html=True)
-                    st.write(':circle: From ', row.start_time.strftime("%H:%M"), ' to ', row.end_time.strftime("%H:%M"))
+                    if row.start_time == row.end_time:
+                        end = row.end + datetime.timedelta(minutes=15)
+                        end = end.time()
+                    else:
+                        end = row.end_time
+                    #if row.start_time == row.end_time:
+                      #   row.end_time = (row.end + datetime.timedelta(minutes=15))
+                    #st.markdown('<i class="fas fa-circle" style="color: red;">', unsafe_allow_html=True)
+                    # st.write('From ', row.start_time.strftime("%H:%M"), ' to ', end.strftime("%H:%M"))
+                    st.markdown('<a style="color: '+ row.overcrowdedness +'; font-weight: 900; padding-left: 15px"> O</a>  From '+  row.start_time.strftime("%H:%M") + ' to ' + end.strftime("%H:%M"), unsafe_allow_html=True)
         else:
             st.write('No overcrowded moments for this location in the next 7 days')
 
