@@ -1,4 +1,4 @@
-,objectnummer,location_name,gebied,crowd_threshold_low,crowd_threshold_high
-23,CMSA-GAWW-11,Korte Niezel,Red_light,1071.0,1377.0
-24,CMSA-GAWW-12,Oudekennissteeg,Red_light,819.0,1053.0
-26,CMSA-GAWW-14,Oudezijds Voorburgwal t.h.v. 91,Red_light,1134.0,1458.0
+;objectnummer;location_name;gebied;crowd_threshold_low;crowd_threshold_high
+23;CMSA-GAWW-11;Korte Niezel;Red_light;264.0;362.0
+24;CMSA-GAWW-12;Oudekennissteeg;Red_light;301.0;439.0
+26;CMSA-GAWW-14;Oudezijds Voorburgwal t.h.v. 91;Red_light;91.0;127.0
