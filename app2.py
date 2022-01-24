@@ -4,12 +4,12 @@ import streamlit as st
 from PIL import Image
 
 
-img = Image.open('favicon_PLACE_3.png')
+favicon = Image.open('pages/elements/favicon.png')
 
 # SET DEFAULT PAGE CONFIGS
 st.set_page_config(
      page_title="PLACE - Crowdedness information hub",
-     page_icon=img,
+     page_icon=favicon,
      layout="wide",
  )
 
@@ -18,10 +18,10 @@ st.set_page_config(
 app = MultiPage()
 
 # Title of the main page
-st.title('PLACE crowdedness information hub')
+st.title('PLACE crowdedness centre')
 # Add all your application here
 app.add_page("Home", home.app)
-app.add_page("Insights", hub.app)
+app.add_page("Info hub", hub.app)
 app.add_page("Data", datapage.app)
 app.add_page("About",about.app)
 

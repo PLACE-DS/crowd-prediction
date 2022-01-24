@@ -46,9 +46,7 @@ def app():
     st.header('Select sensors')
     check_sensors = [st.checkbox(i, key=i) for i in sensors]
     st.header('Select metadata')
-    all_metadata = st.checkbox('Select all metadata')
-    if all_metadata:
-        downloadcolumns = columns
+    all_metadata = st.checkbox('Select all features (overrides settings below)')
 
     with st.expander('Covid'):
         check_covid = [st.checkbox(i, key=i) for i in covid_columns]
@@ -64,10 +62,10 @@ def app():
 
     #check_columns = [st.checkbox(i, key=i) for i in columns]
     checked_sensors = [stock for stock, checked in zip(sensors, check_sensors) if checked]
-    checked_covid = [stock for stock, checked in zip(covid_columns, check_covid) if checked]
-    checked_gvb = [stock for stock, checked in zip(gvb_columns, check_gvb) if checked]
-    checked_knmi = [stock for stock, checked in zip(knmi_columns, check_knmi) if checked]
-    checked_tourism = [stock for stock, checked in zip(tourism_columns, check_tourism) if checked]
+    checked_covid = [stock for stock, checked in zip(covid_columns, check_covid) if checked or all_metadata]
+    checked_gvb = [stock for stock, checked in zip(gvb_columns, check_gvb) if checked or all_metadata]
+    checked_knmi = [stock for stock, checked in zip(knmi_columns, check_knmi) if checked or all_metadata]
+    checked_tourism = [stock for stock, checked in zip(tourism_columns, check_tourism) if checked or all_metadata]
 
     def convert_df(df):
         return df.to_csv()
@@ -76,7 +74,7 @@ def app():
     df_to_download = cmsa_all[downloadcolumns]
     df_to_download['datetime'] = pd.to_datetime(df_to_download['datetime'])
     df_to_download = df_to_download[(df_to_download['datetime'].dt.date > start_dt) & (df_to_download['datetime'].dt.date < end_dt)]
-    
+
     downloadcsv = convert_df(df_to_download)
     
 
