@@ -12,8 +12,7 @@ from plotly.subplots import make_subplots
 
 
 def app():
-    st.title('Historical information hub')
-
+    st.title('Insights')
     #import data as dfs
 
     #cmsa data
@@ -82,7 +81,7 @@ def app():
             st.header("GVB")
             options_gvb = st.multiselect(
              'Stations',
-             ['Dam','Nieuwmarkt', 'Nieuwezijds Kolk'],'Dam')
+             ['Dam','Nieuwmarkt'],'Dam')
             radio_gvb = st.radio(' ', ('checkin', 'checkout', 'total'))
 
 
