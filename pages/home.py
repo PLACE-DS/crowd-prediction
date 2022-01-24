@@ -80,11 +80,10 @@ def app():
         with column2:
             st.header("Overcrowdedness")
             st.write('Predicted overcrowded moments for the next 7 days on the 3 locations:')
-            st.write(' 🔴 **Overcrowded** (95th percentile)')
-            st.write(' 🟡 **Crowded** (90th percentile)')
+            st.write(' 🔴 **Overcrowded** (95<sup>th</sup> percentile)', unsafe_allow_html=True)
+            st.write(' 🟡 **Crowded** (90<sup>th</sup> percentile)', unsafe_allow_html=True)
+            st.markdown('---')
             get_crowded_moments()
-
-    # st.markdown('', unsafe_allow_html=True)
 
 
 def style_button_row(clicked_button_ix):
@@ -145,7 +144,7 @@ def get_weather(w1, w2, w3):
         icon = "http:" + str(weather['current']['condition']['icon'])
         # st.write("Current temperature in Amsterdam:",weather['current']['temp_c'],"degrees Celsius")
         # st.markdown("![weather icon](" + icon + ")")
-
+        w3.write(" ") # fix spacing
         w3.markdown("![weather icon](" + icon + ")")
         w1.metric("Temperature", str(weather['current']['temp_c']) + " °C")
         w2.metric("Wind", str(weather['current']['wind_kph']) + " kph")
@@ -189,6 +188,8 @@ def get_map():
             latitude=52.374,
             longitude=4.899,
             zoom=16,
+            min_zoom=16,
+            max_zoom=16,
             height=400,
             width='100%',
         ),
@@ -326,10 +327,10 @@ def get_crowded_moments():
             combined['start_time'] = combined.start.dt.time
             combined['end_time'] = combined.end.dt.time
 
+            text_info = []
             for date in combined.date.unique():
                 # st.write(date.strftime("%d-%m-%Y"))
-                st.markdown('<p style="font-weight: bold;">' + date.strftime("%A %d %b '%-y") + '</p>',
-                            unsafe_allow_html=True)
+                text_info.append(f'<b> {date.strftime("%A %d %b %-y")} </b>')
                 dff = combined[combined['date'] == date]
                 for row in dff.itertuples():
                     if row.start_time == row.end_time:
@@ -338,9 +339,13 @@ def get_crowded_moments():
                     else:
                         end = row.end_time
                     if row.overcrowdedness == 'red':
-                        st.write(f' 🔴 {row.start_time.strftime("%H:%M")} to {end.strftime("%H:%M")}')
+                        text_info.append(f' 🔴  {row.start_time.strftime("%H:%M")} - {end.strftime("%H:%M")}')
                     if row.overcrowdedness == 'orange':
-                        st.write(f' 🟡 {row.start_time.strftime("%H:%M")} to {end.strftime("%H:%M")}')
+                        text_info.append(f' 🟡  {row.start_time.strftime("%H:%M")} - {end.strftime("%H:%M")}')
+                text_info.append("")
+
+            st.write("<br>".join(text_info), unsafe_allow_html=True)
+
         else:
             st.write('No overcrowded moments for this location in the next 7 days')
 

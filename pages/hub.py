@@ -73,6 +73,7 @@ def app():
         st.plotly_chart(fig_cmsa, use_container_width=True)
 
         # GVB PLOT
+        st.markdown('---')
         st.header("GVB")
 
         col_a, col_b, col_empty = st.columns([0.2, 0.2, 0.6])
@@ -108,6 +109,7 @@ def app():
         st.plotly_chart(fig_gvb, use_container_width=True)
 
         # KNMI PLOT
+        st.markdown('---')
         knmi_mapping = {'Temperature': 'temperature', 'Precipitation': 'precipitation_h', 'Cloud cover': 'cloud_cover',
                         'Wind speed': 'wind_speed'}
         st.header("KNMI")
@@ -132,4 +134,99 @@ def app():
         fig_knmi['data'][0]['showlegend'] = True
         st.plotly_chart(fig_knmi, use_container_width=True)
 
-    st.header("Insights")
+        st.markdown('---')
+        st.header("Stringency")
+        avg_passengers_covid(cmsa_all, st)
+
+        st.markdown('---')
+        st.header("Hourly")
+        avg_hourly_passengers_bar(cmsa_all, st)
+
+        st.markdown('---')
+        st.header("Daily")
+        col_a, col_empty = st.columns([0.2, 0.8])
+        with col_a:
+            radio_daily = st.radio("", ('all-time', 'last month'))
+        avg_daily_passengers_bar(cmsa_all, st, radio_daily == 'last month')
+
+        st.markdown('---')
+        st.header("Monthly")
+        col_a, col_empty = st.columns([0.2, 0.8])
+        with col_a:
+            radio_monthly = st.radio("", ('all-time', 'last year'))
+        avg_monthly_passengers_bar(cmsa_all, st, radio_monthly == 'last year')
+
+
+
+
+
+
+def avg_daily_passengers_bar(cb, st, last_month=False):
+    week_days = [ 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    frame = cb.set_index('datetime')
+    frame['weekday'] = frame.index.day_name()
+    if last_month:
+        frame = frame[frame.index > '2021-12-01']
+    frame = frame[['weekday', 'GAWW-11','GAWW-12', 'GAWW-14']].groupby(by='weekday').mean().reindex(week_days)
+    f = px.bar(frame, x=frame.index, y=['GAWW-11','GAWW-12', 'GAWW-14'], barmode='group',
+               title='average passengers per day' +
+                     (' (all-time)' if not last_month else ' (last month)' ))
+    st.plotly_chart(f, use_container_width=True)
+
+def avg_monthly_passengers_bar(cb, st, last_year=False):
+    months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    frame = cb.set_index('datetime')
+    if last_year:
+        frame = frame[frame.index > '2021-01-01']
+    frame['month'] = frame.index.month_name()
+    frame = frame[['month', 'GAWW-11','GAWW-12', 'GAWW-14']].groupby(by='month').mean().reindex(months)
+    f = px.bar(frame, x=frame.index, y=['GAWW-11','GAWW-12', 'GAWW-14'], barmode='group',
+               title='average passengers per month' +
+                     (' (all-time)' if not last_year else ' (last year)' ))
+    st.plotly_chart(f, use_container_width=True)
+
+def avg_hourly_passengers_bar(cb, st):
+    hours = [f'{t:02}:00' for t in (list(range(5,24))+ list(range(0,5)))]
+    frame = cb.set_index('datetime')
+    if False:
+        frame = frame[frame.index > '2021-01-01']
+
+    frame['hour'] = frame.index.hour
+    frame = frame[['hour', 'GAWW-11','GAWW-12', 'GAWW-14']].groupby(by='hour').mean().reindex(list(range(5,24))+ list(range(0,5)))
+    frame.index = hours
+    f = px.bar(frame, x=frame.index, y=['GAWW-11','GAWW-12', 'GAWW-14'], barmode='group',
+               title='average passengers per hour' +
+                     (' (all-time)' if not False else ' (last year)' ))
+    st.plotly_chart(f, use_container_width=True)
+
+
+def avg_passengers_covid(cb, st):
+    filt = (4*24*7)-1
+
+    # create rolling avgs and inv stringency
+    cb['SMA7_11'] = np.convolve(np.pad(cb['GAWW-11'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
+    cb['SMA7_12'] = np.convolve(np.pad(cb['GAWW-12'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
+    cb['SMA7_14'] = np.convolve(np.pad(cb['GAWW-14'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
+    cb['inv_cov_stringency'] = (100 - cb.stringency_index)
+
+    # Create figure with secondary y-axis
+    fig_cov = make_subplots(specs=[[{"secondary_y": True}]])
+    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_11, name="GAWW-11 7-day m.avg."))
+    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_12, name="GAWW-12 7-day m.avg."))
+    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_14, name="GAWW-14 7-day m.avg."))
+    fig_cov.add_trace(
+        go.Scatter(x=cb.index, y=cb.inv_cov_stringency, name="inv. stringency index", line=dict(
+            color='black',
+            width=2)),
+        secondary_y=True,
+    )
+
+    # plotly manual axis adjustments
+    fig_cov.update_yaxes(title_text="7-Day moving average crowd count", secondary_y=False)
+    fig_cov.update_yaxes(title_text="Inverse stringency index", showgrid=False, secondary_y=True)
+    fig_cov.update
+    fig_cov.update_layout(
+        title_text="Average crowdedness vs. Covid stringency <br><sup>Inverse Stringency Index from 0 (strictest) to 100 (relaxed)</sup>"
+    )
+
+    st.plotly_chart(fig_cov, use_container_width=True)
