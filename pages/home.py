@@ -362,8 +362,8 @@ def display_crowds():
 
 def get_colors(day_pred, hour):
     red = '[255,0,0]'
-    yellow = '[255,255,0]'
-    green = '[0,255,0]'
+    yellow = '[252,211,57]'
+    green = '[0,150,50]'
 
     crowds, crowds_df = get_crowd()
     date = datetime.datetime.combine(day_pred, hour)
