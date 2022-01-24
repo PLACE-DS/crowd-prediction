@@ -21,7 +21,7 @@ app = MultiPage()
 st.title('PLACE crowdedness information hub')
 # Add all your application here
 app.add_page("Home", home.app)
-app.add_page("Historical information", hub.app)
+app.add_page("Insights", hub.app)
 app.add_page("Data", datapage.app)
 app.add_page("About",about.app)
 
