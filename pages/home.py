@@ -23,7 +23,7 @@ locations = {'GAWW-11': [52.374611, 4.899833],
 forecast1 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-11.csv')
 forecast2 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-12.csv')
 forecast3 = pd.read_csv('experiments/fake_forecasts_for_frontend/GAWW-14.csv')
-sensors_info = pd.read_csv('data/sensors-info.csv')
+sensors_info = pd.read_csv('data/sensors-info.csv', sep=';')
 
 def get_dates():
     first_forecast_str = forecast1['datetime'].iloc[0]
@@ -36,9 +36,9 @@ def get_dates():
 first_forecast, last_forecast = get_dates()
 
 day_pred = first_forecast
-hour = datetime.time(00, 00, 00)
+hour = datetime.time(12, 00, 00)
 display = 'Map'
-horizon = '1 day'
+horizon = '3 days'
 
 def app():
     with st.container():
@@ -81,22 +81,22 @@ def app():
                                         min_value=first_forecast,
                                         max_value=last_forecast,
                                         step=datetime.timedelta(days=1))
-                hour = st.slider('Hour of the day:', value=datetime.time(00, 00, 00),
+                hour = st.slider('Hour of the day:', value=datetime.time(12, 00, 00),
                                         min_value=datetime.time(00, 00, 00),
                                         max_value=datetime.time(23, 45, 00),
                                         step=datetime.timedelta(minutes=15),
                                         format='H:mm')
 
             else:
-                get_plot()
                 global horizon
-                horizon = st.select_slider('Prediction horizon:', options=['1 day', '2 days', '3 days', '4 days', '5 days', '6 days', '7 days'])
-                #horizon = st.radio("Prediction horizon", ("1 day", "3 days", "7 days"))
-
+                horizon = st.select_slider('Prediction horizon:', options=['1 day', '2 days', '3 days', '4 days', '5 days', '6 days', '7 days'], value='3 days')
+                get_plot()
 
         with column2:
             st.header("Overcrowdedness")
             st.write('Predicted overcrowded moments for the next 7 days on the 3 locations:')
+            st.write(' 🔴 **Overcrowded** (95th percentile)')
+            st.write(' 🟡 **Crowded** (90th percentile)')
             display_crowds()
 
     #st.markdown('', unsafe_allow_html=True)
@@ -126,7 +126,7 @@ def style_button_row(clicked_button_ix):
 
 
 day_pred = first_forecast
-hour = datetime.time(00, 00, 00)
+hour = datetime.time(12, 00, 00)
 
 # SENSORS LOCATION:
 # CMSA-GAWW-11 - 52.374611, 4.899833 (52°22'28.6"N 4°53'59.4"E)
@@ -136,9 +136,9 @@ locations_df = pd.DataFrame(
         [[52.374611, 4.899833], [52.373883, 4.898653], [52.373571, 4.898272]],
         columns=['lat', 'lon'])
 
-locations_names = {'GAWW-11': 'Korte Niezel', 'GAWW-12': 'Oudekennissteeg', 'GAWW-14': 'Oudezijds Voorburgwal 91'}
+locations_names = {'GAWW-11': 'Korte Niezel', 'GAWW-12': 'Oudekennissteeg', 'GAWW-14': 'Oudezijds Voorburgwal'}
 
-all_forecasts = forecast1.drop(['upper', 'lower'], axis=1)
+all_forecasts = forecast1
 all_forecasts = all_forecasts.rename(columns={'prediction': 'GAWW-11'})
 all_forecasts['GAWW-12'] = forecast2.prediction
 all_forecasts['GAWW-14'] = forecast3.prediction
@@ -149,9 +149,8 @@ all_forecasts['datetime2']=pd.to_datetime(all_forecasts.datetime)
 # Add the thresholds
 for ind, loc in enumerate(locations):
     loc_info = sensors_info[sensors_info['objectnummer']=='CMSA-'+loc]
-    all_forecasts[loc+'_th_low'] = loc_info['crowd_threshold_low'][ind]-500
-    all_forecasts[loc+'_th_high'] = loc_info['crowd_threshold_high'][ind]-600
-
+    all_forecasts[loc+'_th_low'] = loc_info['crowd_threshold_low'][ind]
+    all_forecasts[loc+'_th_high'] = loc_info['crowd_threshold_high'][ind]
 
 
 def get_weather(w1, w2, w3):
@@ -179,9 +178,24 @@ def get_map():
 
     locations_text = pd.DataFrame([[52.374611, 4.899833-0.0009, 'Korte Niezel'],
                                    [52.373883, 4.898653-0.0011, 'Oudekennissteeg'],
-                                   [52.373571, 4.898272-0.0015, 'Oudezijds Voorburgwal 91']], columns=['lat', 'lon', 'text'])
+                                   [52.373571, 4.898272-0.0014, 'Oudezijds Voorburgwal']], columns=['lat', 'lon', 'text'])
+    loc_colors, crowds = get_colors(day_pred, hour)
 
-    loc_colors = get_colors(day_pred, hour)
+    date = datetime.datetime.combine(day_pred, hour).strftime("%Y-%m-%d %H:%M:%S")
+    crowds = all_forecasts[all_forecasts['datetime']==date]
+
+    if crowds.size > 0:
+        crowds = crowds.iloc[0]
+        locations_crowd = pd.DataFrame([[52.374611, 4.899833, str(int(crowds['GAWW-11']))],
+                                   [52.373883, 4.898653, str(int(crowds['GAWW-12']))],
+                                   [52.373571, 4.898272, str(int(crowds['GAWW-14']))]], columns=['lat', 'lon', 'text'])
+    else:
+        locations_crowd = pd.DataFrame([[52.374611-0.0001, 4.899833-0.0009, ''],
+                                   [52.373883-0.0001, 4.898653-0.0011, ''],
+                                   [52.373571-0.0001, 4.898272-0.0015, '']], columns=['lat', 'lon', 'text'])
+
+    #st.write(gg[gg['datetime']==date])
+
     map = pdk.Deck(
         map_style='mapbox://styles/mapbox/light-v9',
         initial_view_state=pdk.ViewState(
@@ -244,6 +258,16 @@ def get_map():
                 get_color=loc_colors['GAWW-14'],
                 get_radius=5,
             ),
+            pdk.Layer(
+                "TextLayer",
+                pickable=True,
+                data=locations_crowd,
+                get_position='[lon, lat]',
+                get_text="text",
+                get_size=30,
+                get_color=[0, 0, 0],
+                get_angle=0,
+            ),
         ],
     )
 
@@ -257,22 +281,22 @@ def get_crowd():
         loc_forecast = pd.read_csv('experiments/fake_forecasts_for_frontend/'+ loc +'.csv')
 
         # Get the times with yellow forecast:
-        yellow_forecast = loc_forecast[loc_forecast['prediction'] > loc_info['crowd_threshold_low'][ind]-500]
+        yellow_forecast = loc_forecast[loc_forecast['prediction'] > loc_info['crowd_threshold_low'][ind]]
         if yellow_forecast.shape[0] > 0:
-            yellow_forecast = yellow_forecast[yellow_forecast['prediction'] < loc_info['crowd_threshold_high'][ind]-600]
+            yellow_forecast = yellow_forecast[yellow_forecast['prediction'] < loc_info['crowd_threshold_high'][ind]]
 
         # Get the times with red forecast:
-        red_forecast = loc_forecast[loc_forecast['prediction'] > loc_info['crowd_threshold_high'][ind]-600]
+        red_forecast = loc_forecast[loc_forecast['prediction'] > loc_info['crowd_threshold_high'][ind]]
         crowds[loc] = {'yellow': yellow_forecast, 'red':red_forecast}
 
 
 
         # MERGE OVERCROWDED FORECASTS:
-        yellow = yellow_forecast.drop(['upper', 'lower'], axis=1)
+        yellow = yellow_forecast
         yellow['overcrowdedness'] = 'orange'
         yellow.set_index('datetime')
 
-        red = red_forecast.drop(['upper', 'lower'], axis=1)
+        red = red_forecast
         red['overcrowdedness'] = 'red'
         red.set_index('datetime')
 
@@ -341,7 +365,7 @@ def get_colors(day_pred, hour):
     yellow = '[255,255,0]'
     green = '[0,255,0]'
 
-    crowds, _ = get_crowd()
+    crowds, crowds_df = get_crowd()
     date = datetime.datetime.combine(day_pred, hour)
     loc_colors = {}
 
@@ -352,8 +376,7 @@ def get_colors(day_pred, hour):
             loc_colors[loc] = yellow
         else:
             loc_colors[loc] = green
-
-    return loc_colors
+    return loc_colors, crowds_df
 
 def get_plot():
     global horizon
@@ -369,29 +392,21 @@ def get_plot():
     fig = go.Figure()
     # loc_radio = st.radio("Location", ("All", "GAWW-11", "GAWW-12", "GAWW-14"))
 
-    options_loc = st.multiselect('Select locations', ["GAWW-11", "GAWW-12", "GAWW-14"], ["GAWW-11", "GAWW-12", "GAWW-14"])
-
+    options_loc = st.multiselect('Select locations', [locations_names["GAWW-11"], locations_names["GAWW-12"], locations_names["GAWW-14"]], [locations_names["GAWW-11"], locations_names["GAWW-12"], locations_names["GAWW-14"]])
+    locations_names_2 = {v: k for k, v in locations_names.items()}
 
     if len(options_loc) > 0:
-        for ind, loc in enumerate(options_loc):
+        for ind, loc2 in enumerate(options_loc):
+            loc = locations_names_2[loc2]
             fig.add_trace(
                 go.Scatter(
                     x=forecasts.datetime2,
                     y=forecasts[loc],
-                    text = loc,
-                    name = loc,
+                    text = loc2,
+                    name = loc2,
                     line_color = colors_dict[loc],
                     line_width=2))
             if len(options_loc) == 1:
-                fig.add_trace(
-                    go.Scatter(
-                        x=forecasts.datetime2,
-                        y=forecasts[loc+'_th_low'],
-                        line_color = colors_dict[loc],
-                        text = 'Low threshold',
-                        name = 'Low threshold',
-                        line_width=0.5))
-
                 fig.add_trace(
                     go.Scatter(
                         x=forecasts.datetime2,
@@ -399,13 +414,24 @@ def get_plot():
                         line_color = colors_dict[loc],
                         text = 'High threshold',
                         name = 'High threshold',
-                        line_width=0.5))
+                        line_width=0.5)
+                )
+                fig.add_trace(
+                    go.Scatter(
+                        x=forecasts.datetime2,
+                        y=forecasts[loc+'_th_low'],
+                        line_color = '#808080',
+                        text = 'Low threshold',
+                        name = 'Low threshold',
+                        line_width=0.5)
+                )
+            fig.update_xaxes(tickformat="%H:%M\n%a %-d %b '%-y")
     else:
         pass
 
 
     fig.update_layout(
-        title="7 Day prediction",
+        #title="7 Day prediction",
         margin=dict(l=20, r=20, t=30, b=20),
         # width = 550,
         # height = 400
