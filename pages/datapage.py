@@ -11,16 +11,17 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # cmsa_all = pd.read_csv("data/cmsa_combined.csv")
-# cmsa_all['total'] = cmsa_all['GAWW-11'] + cmsa_all['GAWW-12'] + cmsa_all['GAWW-14']
+# cmsa_all['total'] = cmsa_all['GAWW-11'] + cmsa_all['GAWW-12'] + cmsa_all['Korte Niezel']
 # cmsa_all['datetime'] = pd.to_datetime(cmsa_all['datetime'])
 # cmsa_per_day = cmsa_all.resample('D', on='datetime').sum()
 # columns = [cmsa_all.columns]
 
 def app():
     cmsa_all = pd.read_csv("data/cmsa_combined.csv")
-    cmsa_all['total'] = cmsa_all['GAWW-11'] + cmsa_all['GAWW-12'] + cmsa_all['GAWW-14']
+    cmsa_all['total'] = cmsa_all['Korte Niezel'] + cmsa_all['Oudekennissteeg'] + cmsa_all['Oudezijds Voorburgwal']
     cmsa_all['datetime'] = pd.to_datetime(cmsa_all['datetime'])
     cmsa_per_day = cmsa_all.resample('D', on='datetime').sum()
+
     sensors = cmsa_all.columns[1:4]
     columns = cmsa_all.columns[6:]
     knmi_columns = cmsa_all.columns[19:]

@@ -18,7 +18,8 @@ def app():
 
     # cmsa data
     cmsa_all = pd.read_csv("data/cmsa_combined.csv")
-    cmsa_all['total'] = cmsa_all['GAWW-11'] + cmsa_all['GAWW-12'] + cmsa_all['GAWW-14']
+
+    cmsa_all['total'] = cmsa_all['Korte Niezel'] + cmsa_all['Oudekennissteeg'] + cmsa_all['Oudezijds Voorburgwal']
     cmsa_all['datetime'] = pd.to_datetime(cmsa_all['datetime'])
     cmsa_per_day = cmsa_all.resample('D', on='datetime').sum()
 
@@ -167,8 +168,8 @@ def avg_daily_passengers_bar(cb, st, last_month=False):
     frame['weekday'] = frame.index.day_name()
     if last_month:
         frame = frame[frame.index > '2021-12-01']
-    frame = frame[['weekday', 'GAWW-11','GAWW-12', 'GAWW-14']].groupby(by='weekday').mean().reindex(week_days)
-    f = px.bar(frame, x=frame.index, y=['GAWW-11','GAWW-12', 'GAWW-14'], barmode='group',
+    frame = frame[['weekday', 'Korte Niezel','Oudekennissteeg', 'Oudezijds Voorburgwal']].groupby(by='weekday').mean().reindex(week_days)
+    f = px.bar(frame, x=frame.index, y=['Korte Niezel','Oudekennissteeg', 'Oudezijds Voorburgwal'], barmode='group',
                title='average passengers per day' +
                      (' (all-time)' if not last_month else ' (last month)' ))
     st.plotly_chart(f, use_container_width=True)
@@ -179,8 +180,8 @@ def avg_monthly_passengers_bar(cb, st, last_year=False):
     if last_year:
         frame = frame[frame.index > '2021-01-01']
     frame['month'] = frame.index.month_name()
-    frame = frame[['month', 'GAWW-11','GAWW-12', 'GAWW-14']].groupby(by='month').mean().reindex(months)
-    f = px.bar(frame, x=frame.index, y=['GAWW-11','GAWW-12', 'GAWW-14'], barmode='group',
+    frame = frame[['month', 'Korte Niezel','Oudekennissteeg', 'Oudezijds Voorburgwal']].groupby(by='month').mean().reindex(months)
+    f = px.bar(frame, x=frame.index, y=['Korte Niezel','Oudekennissteeg', 'Oudezijds Voorburgwal'], barmode='group',
                title='average passengers per month' +
                      (' (all-time)' if not last_year else ' (last year)' ))
     st.plotly_chart(f, use_container_width=True)
@@ -192,9 +193,9 @@ def avg_hourly_passengers_bar(cb, st):
         frame = frame[frame.index > '2021-01-01']
 
     frame['hour'] = frame.index.hour
-    frame = frame[['hour', 'GAWW-11','GAWW-12', 'GAWW-14']].groupby(by='hour').mean().reindex(list(range(5,24))+ list(range(0,5)))
+    frame = frame[['hour', 'Korte Niezel','Oudekennissteeg', 'Oudezijds Voorburgwal']].groupby(by='hour').mean().reindex(list(range(5,24))+ list(range(0,5)))
     frame.index = hours
-    f = px.bar(frame, x=frame.index, y=['GAWW-11','GAWW-12', 'GAWW-14'], barmode='group',
+    f = px.bar(frame, x=frame.index, y=['Korte Niezel','Oudekennissteeg', 'Oudezijds Voorburgwal'], barmode='group',
                title='average passengers per hour' +
                      (' (all-time)' if not False else ' (last year)' ))
     st.plotly_chart(f, use_container_width=True)
@@ -204,16 +205,16 @@ def avg_passengers_covid(cb, st):
     filt = (4*24*7)-1
 
     # create rolling avgs and inv stringency
-    cb['SMA7_11'] = np.convolve(np.pad(cb['GAWW-11'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
-    cb['SMA7_12'] = np.convolve(np.pad(cb['GAWW-12'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
-    cb['SMA7_14'] = np.convolve(np.pad(cb['GAWW-14'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
-    cb['inv_cov_stringency'] = (100 - cb.stringency_index)
+    cb['SMA7_11'] = np.convolve(np.pad(cb['Korte Niezel'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
+    cb['SMA7_12'] = np.convolve(np.pad(cb['Oudekennissteeg'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
+    cb['SMA7_14'] = np.convolve(np.pad(cb['Oudezijds Voorburgwal'], (335,335), mode='edge'), np.ones(filt) / filt, mode='valid')
+    cb['inv_cov_stringency'] = (100 - cb["COVID Stringency Index"])
 
     # Create figure with secondary y-axis
     fig_cov = make_subplots(specs=[[{"secondary_y": True}]])
-    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_11, name="GAWW-11 7-day m.avg."))
-    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_12, name="GAWW-12 7-day m.avg."))
-    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_14, name="GAWW-14 7-day m.avg."))
+    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_11, name="Korte Niezel 7-day m.avg."))
+    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_12, name="Oudekennissteeg 7-day m.avg."))
+    fig_cov.add_trace(go.Scatter(x=cb.index, y=cb.SMA7_14, name="Oudezijds Voorburgwal 7-day m.avg."))
     fig_cov.add_trace(
         go.Scatter(x=cb.index, y=cb.inv_cov_stringency, name="inv. stringency index", line=dict(
             color='black',
