@@ -1,15 +1,19 @@
 # Crowd count prediction and dashboard
 
-This application predicts the 7-day crowdedness of 3 locations in the city centre of Amsterdam, to keep the citty safe. It gathers data from crowd-count sensors, weather stations, nearby (public) transport vendors and more, processes and cleans these to be used with LSTM and XGBoost models. This information along with valuable statics is served to the user through an interactive dashboard.
+This application predicts the 7-day crowdedness of 3 locations in the city centre of Amsterdam, to keep the citty safe. It gathers data from crowd-count sensors, weather stations, nearby (public) transport vendors and more, processes and cleans these to be used with LSTM and XGBoost models. This information along with valuable statistics is served to the user through an interactive dashboard.
 
-![](img/first_look.png)
+You can check the paper [here](/Crowd_Forecasting_based_on_Counting_Cameras_in_Amsterdams_Red_Light_District.pdf).
+
+![cas](img/first_look.png)
 
 ---
 
 ## Data Pipeline
 ![pipeline v2](https://user-images.githubusercontent.com/37158629/144886644-e670f144-0ff6-40b2-bfbb-dc2664b5bd00.png)
 
-## Development
+---
+
+## Deploying
 <details>
 <summary>Setting up the environment</summary>
 
