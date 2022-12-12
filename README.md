@@ -2,8 +2,8 @@
 
 This application predicts the 7-day crowdedness of 3 locations in the city centre of Amsterdam, to keep the citty safe. It gathers data from crowd-count sensors, weather stations, nearby (public) transport vendors and more, processes and cleans these to be used with LSTM and XGBoost models. This information along with valuable statistics is served to the user through an interactive dashboard.
 
-Our predictions were a 67% improvement to the baseline!
-All crowd-count data has been replaced with dummy data for privacy reasons.
+>Our predictions were a 68% F1 accuracy improvement to the baseline due to improved models and data blending!\
+>All crowd-count data has been replaced with dummy data for privacy reasons.
 
 You can check the paper [here](/Crowd_Forecasting_based_on_Counting_Cameras_in_Amsterdams_Red_Light_District.pdf).
 
