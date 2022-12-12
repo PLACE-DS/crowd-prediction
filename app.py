@@ -1,5 +1,5 @@
-from multipage import MultiPage
-from pages import home, hub, datapage, about # import your pages here
+from multipage_ import MultiPage
+from pages import home, hub, datapage, about
 import streamlit as st
 from PIL import Image
 
