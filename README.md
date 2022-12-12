@@ -2,6 +2,10 @@
 
 This application predicts the 7-day crowdedness of 3 locations in the city centre of Amsterdam, to keep the citty safe. It gathers data from crowd-count sensors, weather stations, nearby (public) transport vendors and more, processes and cleans these to be used with LSTM and XGBoost models. This information along with valuable statics is served to the user through an interactive dashboard.
 
+![](img/first_look.png)
+
+---
+
 ## Data Pipeline
 ![pipeline v2](https://user-images.githubusercontent.com/37158629/144886644-e670f144-0ff6-40b2-bfbb-dc2664b5bd00.png)
 
@@ -35,6 +39,4 @@ Go to src directory, run this from the shell/terminal:
 
 - ```streamlit run app.py```
 
-You should see this pop up.
-
-![](img/first_look.png)
+You should see the app pop up.
