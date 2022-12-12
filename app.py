@@ -1,4 +1,4 @@
-from multipage_ import MultiPage
+from multipage import MultiPage
 from pages import home, hub, datapage, about
 import streamlit as st
 from PIL import Image
