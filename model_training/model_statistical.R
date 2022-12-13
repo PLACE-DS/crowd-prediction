@@ -1,5 +1,7 @@
 library(tidyr)
 library(dplyr)
+library(fastDummies)
+library(stringr)
 library(tsibble)
 library(fpp3)
 
@@ -137,4 +139,3 @@ p2 <- train_11 %>% autoplot(value) + #plot
   theme(legend.position = "none")
 
 grid.arrange(p1,p2, ncol=2)
-

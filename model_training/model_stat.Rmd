@@ -1,0 +1,220 @@
+
+```{r}
+# basics
+library(tidyr)
+library(dplyr)
+library(tsibble)
+library(fpp3)
+
+# models
+library(fable.prophet)
+
+# visual
+library(gt)
+library(ggplot2)
+```
+
+```{r}
+df <- read.csv('../data/cmsa_combined.csv')
+```
+
+
+```{r}
+# load data
+df <- read.csv('../data/cmsa_combined.csv')  %>%
+  select(c('datetime', 'Korte.Niezel', 'Oudekennissteeg', 'Oudezijds.Voorburgwal', 'stringency_index')) %>%
+  mutate(datetime = as.POSIXct(datetime, format="%Y-%m-%d %H:%M:%S", tz="UTC")) %>%
+  as_tsibble(index = datetime)
+
+train_split <- function(df){
+  train <- df %>% filter(datetime < ymd_hms("2021-12-01 12:00:00"))
+  return(train)
+}
+
+test_split <- function(df){
+  test  <- df %>% filter(datetime >= ymd_hms("2021-12-01 12:00:00")&
+                         datetime <= ymd_hms("2021-12-08 11:45:00")) 
+  return(test)
+}
+
+train_split <- function(df){
+  train <- df %>% filter(datetime < ymd_hms("2021-12-08 12:00:00"))
+  return(train)
+}
+
+test_split <- function(df){
+  test  <- df %>% filter(datetime >= ymd_hms("2021-12-08 12:00:00")&
+                         datetime <= ymd_hms("2021-12-15 11:45:00")) 
+  return(test)
+}
+
+```
+
+```{r}
+g_11 <- df %>% select('Korte.Niezel')
+g_12 <- df %>% select('Oudekennissteeg')
+g_14 <- df %>% select('Oudezijds.Voorburgwal')
+
+sensors <- list(g_11, g_12, g_14)
+```
+
+```{r}
+p_l <- list()
+acc_l <- list()
+fit_l <- list()
+fc_l <- list()
+
+for(sensor in sensors){
+  train = train_split(sensor)
+  test = test_split(sensor)
+  
+  sensor_name = colnames(train)[1]
+  colnames(train)[1] <- 'count'
+  colnames(test)[1]  <- 'count'
+
+  fit <- train %>% model(
+    "mean"           = MEAN(count),
+    "naïve"          = NAIVE(count),
+    "seasonal naïve" = SNAIVE(count ~ lag("day")),
+    "drift"          = RW(count ~ drift()),
+    "ets"            = ETS(count)
+#    "prophet"        = prophet(count ~ # does kinda poorly
+#            season(period = "day",  order = 10) +
+#            season(period = "week", order = 5))
+#    "ARIMA F05"       = ARIMA(count ~ fourier(K=5, period=24*4))
+  )
+  
+  fc <- fit %>% forecast(h = 4*24*7)
+  
+  p <- fc %>%
+    autoplot(train %>% filter(datetime > ymd_hms("2021-11-22 12:00:00")), level = NULL) +
+    autolayer(test, alpha=0.5) +
+    labs(
+      y = "People passing",
+      title = paste(sensor_name, ": Crowd-count benchmark forecasts", sep = "")
+    ) +
+    guides(colour = guide_legend(title = "Model"))
+  
+  acc = accuracy(fc, test) %>%
+    select(c('.model', 'RMSE', 'MAE')) %>% 
+    rename("Model" = ".model") %>%
+    arrange(RMSE) %>%
+    gt() %>%
+    tab_header(
+                title = md(paste("**",sensor_name," benchmark accuracies**", sep = "")),
+        ) %>%
+        opt_align_table_header(align = "center")
+    
+  print(p)
+  print(acc)
+  
+}
+
+```
+
+```{r}
+for(sensor in sensors){
+  train = train_split(sensor)
+  test = test_split(sensor)
+  
+  sensor_name = colnames(train)[1]
+  colnames(train)[1] <- 'count'
+  colnames(test)[1]  <- 'count'
+  
+  fit <- model(train,
+    `K = 01` = TSLM(count ~ fourier(K=1, period=24*4)),
+    `K = 02` = TSLM(count ~ fourier(K=2, period=24*4)),
+    `K = 03` = TSLM(count ~ fourier(K=3, period=24*4)),
+    `K = 04` = TSLM(count ~ fourier(K=4, period=24*4)),
+    `K = 05` = TSLM(count ~ fourier(K=5, period=24*4)),
+    `K = 06` = TSLM(count ~ fourier(K=6, period=24*4)),
+    `K = 07` = TSLM(count ~ fourier(K=7, period=24*4)),
+    `K = 08` = TSLM(count ~ fourier(K=8, period=24*4)),
+    `K = 09` = TSLM(count ~ fourier(K=9, period=24*4)),
+    `K = 10` = TSLM(count ~ fourier(K=10, period=24*4)),
+    `K = 11` = TSLM(count ~ fourier(K=11, period=24*4)),
+    `K = 12` = TSLM(count ~ fourier(K=12, period=24*4)),
+    `K = 13` = TSLM(count ~ fourier(K=13, period=24*4)),
+    `K = 14` = TSLM(count ~ fourier(K=14, period=24*4)),
+    `K = 15` = TSLM(count ~ fourier(K=15, period=24*4)),
+    `K = 16` = TSLM(count ~ fourier(K=16, period=24*4)),
+    `K = 17` = TSLM(count ~ fourier(K=17, period=24*4)),
+    `K = 18` = TSLM(count ~ fourier(K=18, period=24*4)),
+    `K = 19` = TSLM(count ~ fourier(K=19, period=24*4)),
+    `K = 20` = TSLM(count ~ fourier(K=20, period=24*4))
+  )
+  
+  tb <- fit %>% glance() %>%
+    select(c(.model,AICc)) %>%
+    gt() %>%
+    tab_header(title = md("**HR w/ Fouriers comparison**")) %>%
+    opt_align_table_header(align = "center")
+  
+  g <- fit %>% glance() %>% select(AICc)
+  g <- data.frame(AICc = g$AICc, K = seq(1,20,1))
+  
+  p <- ggplot(g, aes(x=K, y=AICc, group = 1)) +
+    geom_path() +
+    geom_point() +
+    labs(title = paste(sensor_name, ": AICc of LM with K Fourier terms",sep=""))
+  
+  # print(tb)
+  print(p)
+}
+  
+```
+
+
+```{r}
+trend_vs_stringency <- function(dcmp, sensor_name)
+{
+  df_m <- components(dcmp) %>%
+  select(c(datetime, trend))
+  
+df_m$stringency_index <- df$stringency_index
+df_m$inverse_stringency_index <- 100 - df_m$stringency_index
+
+  write.csv(df_m, paste(sensor_name,"_trend.csv",sep=""), row.names = FALSE)
+
+
+scale_value = max(df_m$trend, na.rm = TRUE)/ 100 # max of str_idx is known to be 100, otherwise -> # max(DF$inverse_stringency_index , na.rm = TRUE)
+colors <- c("Trend of passengers" = "dodgerblue3", "Inverse Stringency Index" = "darkorchid3")
+            
+p<- ggplot(df_m) + 
+  ggtitle(paste("Comparison of covid regulations and",sensor_name,"passenger trend")) +
+  labs(y="Trend of passengers", color = "Legend", subtitle = "Inverse Stringency Index: 100 to 0 (strictest) ") +
+  theme(legend.position="bottom") +
+  scale_color_manual(values = colors) +
+  geom_line(aes(x= datetime, y= trend, color = "Trend of passengers")) +
+  geom_line(aes(x= datetime, y = inverse_stringency_index*scale_value, color = "Inverse Stringency Index")) + 
+  scale_y_continuous(sec.axis = sec_axis(~./scale_value, name = 'Inverse Stringency Index'))
+
+print(p)
+
+}
+
+
+
+```
+
+```{r}
+for(sensor in sensors){
+  sensor_name = colnames(sensor)[1]
+  colnames(sensor)[1] <- 'count'
+  
+  dcmp <- sensor %>%
+    model(STL(count))
+  
+  p <- components(dcmp) %>% autoplot()
+  print(p)
+  
+  trend_vs_stringency(dcmp, sensor_name)
+  
+}
+```
+
+```{r}
+
+
+```
+
